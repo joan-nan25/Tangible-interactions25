@@ -1,9 +1,15 @@
+/*  Press 1, 2, or 3 to switch pattern modes.
+
+Press SPACE for a new random variation.
+
+ */
+
 
 let seed = 12345;
 let mode = 1;
 
 function setup() {
-  createCanvas(600, 400);
+  createCanvas(600, 600);
   angleMode(DEGREES);
   rectMode(CENTER);
   noLoop();
@@ -135,6 +141,7 @@ function keyPressed() {
 }
 
 function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
+  resizeCanvas(600, 600);
   redraw();
 }
+
