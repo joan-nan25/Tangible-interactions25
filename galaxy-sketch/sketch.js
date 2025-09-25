@@ -38,10 +38,8 @@ function setup() {
   createCanvas(800, 600);
   imageMode(CENTER);
 
-  // Allow sound after user clicks
-  userStartAudio().then(() => {
-    console.log("🔊 Audio enabled");
-  });
+  // Enable sound once user interacts (click or key)
+  userStartAudio();
 
   shipY = height - 100;
 }
@@ -72,7 +70,7 @@ function draw() {
 
   // Play tick when Earth crosses right side
   if (abs(sin(angle)) < 0.01 && !tickedThisOrbit) {
-    if (bounce && bounce.isLoaded()) bounce.play();
+    if (bounce) bounce.play();
     tickedThisOrbit = true;
   }
   if (abs(sin(angle)) > 0.2) {
@@ -91,12 +89,12 @@ function draw() {
     if (shipY < -150) {
       shipY = height - 100;
       shipMoving = false;
-      if (bounce && bounce.isLoaded()) bounce.play();
+      if (bounce) bounce.play();
     }
   }
 
   // ---- Draw red & black rocket (RIGHT side) ----
-  let shipX = width * 0.78; // 👉 moved back to right side
+  let shipX = width * 0.78; // right side
   let rocketH = 140;
   let rocketW = 40;
 
@@ -143,4 +141,3 @@ function draw() {
   let catY = height/2 + catOrbitRadius * sin(catOrbitAngle);
   image(catImg, catX, catY, 100, 100);
 }
-
