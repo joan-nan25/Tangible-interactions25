@@ -1,85 +1,109 @@
 
 
-PImage sprite; 
-Mover[] movers = new Mover[20]; // Multiple moving objects
+// === Mesmerizing Cat Animation ===
+// Files in data folder: sprite.png, bounce.wav
+
+import processing.sound.*;
+
+PImage cat;
+SoundFile bounce;
+
+// Position + velocity
+float x, y, vx, vy;
+float noiseOffsetX, noiseOffsetY;
+
+// Background particles
+int particleCount = 180;
+float[] px = new float[particleCount];
+float[] py = new float[particleCount];
+float[] pr = new float[particleCount];
+color[] pc = new color[particleCount];
 
 void setup() {
   size(800, 600);
   smooth();
 
-  // Load image (place "sprite.png" inside a "data" folder in your sketch directory)
-  sprite = loadImage("sprite.png");
+  // Load assets
+  cat = loadImage("sprite.png");
+  bounce = new SoundFile(this, "bounce.wav");
 
-  // Initialize movers
-  for (int i = 0; i < movers.length; i++) {
-    movers[i] = new Mover(random(width), random(height));
+  // Start in center
+  x = width/2;
+  y = height/2;
+  vx = random(-3, 3);
+  vy = random(-3, 3);
+
+  noiseOffsetX = random(1000);
+  noiseOffsetY = random(2000);
+
+  // Init particles
+  for (int i = 0; i < particleCount; i++) {
+    px[i] = random(width);
+    py[i] = random(height);
+    pr[i] = random(2, 8);
+    pc[i] = color(random(255), random(255), random(255), 180);
   }
 }
 
 void draw() {
-  background(20, 30, 50);
+  // Semi-transparent bg for trails
+  fill(0, 40);
+  rect(0, 0, width, height);
 
-  for (Mover m : movers) {
-    m.update();
-    m.checkEdges();
-    m.display();
+  // Noise-based drifting
+  float noiseVX = map(noise(noiseOffsetX), 0, 1, -2, 2);
+  float noiseVY = map(noise(noiseOffsetY), 0, 1, -2, 2);
+  noiseOffsetX += 0.01;
+  noiseOffsetY += 0.01;
+
+  vx += noiseVX * 0.05;
+  vy += noiseVY * 0.05;
+  vx = constrain(vx, -5, 5);
+  vy = constrain(vy, -5, 5);
+
+  // Move sprite
+  x += vx;
+  y += vy;
+
+  // Bounce + trigger sound + recolor particles
+  if (x < 60 || x > width-60) {
+    vx *= -1;
+    bounce.play();
+    randomizeColors();
   }
+  if (y < 60 || y > height-60) {
+    vy *= -1;
+    bounce.play();
+    randomizeColors();
+  }
+
+  // Draw particles
+  noStroke();
+  for (int i = 0; i < particleCount; i++) {
+    fill(pc[i]);
+    ellipse(px[i], py[i], pr[i], pr[i]);
+
+    // Gentle drifting with noise
+    px[i] += map(noise(px[i] * 0.01, frameCount * 0.01), 0, 1, -1.5, 1.5);
+    py[i] += map(noise(py[i] * 0.01, frameCount * 0.01), 0, 1, -1.5, 1.5);
+
+    // Wrap around edges
+    if (px[i] < 0) px[i] = width;
+    if (px[i] > width) px[i] = 0;
+    if (py[i] < 0) py[i] = height;
+    if (py[i] > height) py[i] = 0;
+  }
+
+  // Draw sprite with random tint
+  imageMode(CENTER);
+  tint(random(150, 255), random(150, 255), random(150, 255));
+  image(cat, x, y, 120, 120);
+  noTint();
 }
 
-// --- CLASS ---
-class Mover {
-  float x, y;
-  float xSpeed, ySpeed;
-  float noiseOffsetX, noiseOffsetY;
-  color c;
-  
-  Mover(float startX, float startY) {
-    x = startX;
-    y = startY;
-    xSpeed = random(-2, 2);
-    ySpeed = random(-2, 2);
-    noiseOffsetX = random(1000);
-    noiseOffsetY = random(2000);
-    c = color(random(255), random(255), random(255), 180);
-  }
-  
-  void update() {
-    // Add some Perlin noise to make the path more organic
-    x += map(noise(noiseOffsetX), 0, 1, -2, 2) + xSpeed;
-    y += map(noise(noiseOffsetY), 0, 1, -2, 2) + ySpeed;
-
-    noiseOffsetX += 0.01;
-    noiseOffsetY += 0.01;
-    
-    // Change color depending on speed
-    float speed = dist(0, 0, xSpeed, ySpeed);
-    c = color(map(speed, 0, 4, 50, 255), random(150, 255), 200, 200);
-
-    // Conditional rule: reverse if in central "zone"
-    if (x > width/3 && x < 2*width/3 && y > height/3 && y < 2*height/3) {
-      xSpeed *= -1;
-      ySpeed *= -1;
-    }
-  }
-  
-  void checkEdges() {
-    // Bounce off walls
-    if (x < 0 || x > width) {
-      xSpeed *= -1;
-    }
-    if (y < 0 || y > height) {
-      ySpeed *= -1;
-    }
-  }
-  
-  void display() {
-    noStroke();
-    fill(c);
-    ellipse(x, y, 25, 25);
-    
-    // Draw sprite image behind ellipse
-    imageMode(CENTER);
-    tint(255, 180);
-    image(sprite, x, y, 40, 40);
+// Change particle colors on bounce
+void randomizeColors() {
+  for (int i = 0; i < particleCount; i++) {
+    pc[i] = color(random(255), random(255), random(255), 200);
   }
 }
