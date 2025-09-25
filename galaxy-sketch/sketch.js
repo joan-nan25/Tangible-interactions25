@@ -20,8 +20,8 @@ let sunPulseAngle = 0;
 
 // Cat orbit
 let catOrbitAngle = 0;
-let catOrbitSpeed = 0.05;
-let catOrbitRadius = 350;
+let catOrbitSpeed = 0.02;   // slower orbit
+let catOrbitRadius = 200;   // stays inside galaxy
 
 function preload() {
   // Load images
@@ -95,8 +95,8 @@ function draw() {
     }
   }
 
-  // ---- Draw red & black rocket (LEFT side) ----
-  let shipX = width * 0.22;
+  // ---- Draw red & black rocket (RIGHT side) ----
+  let shipX = width * 0.78; // 👉 moved back to right side
   let rocketH = 140;
   let rocketW = 40;
 
@@ -125,6 +125,16 @@ function draw() {
             rocketW, rocketH/2 + 30,
             rocketW/4, rocketH/2);
 
+  // Flame (only when moving)
+  if (shipMoving) {
+    noStroke();
+    fill(255, 150 + random(-30, 30), 0); // flicker orange
+    let flameH = 50 + random(-10, 10);
+    triangle(-rocketW/4, rocketH/2,
+             rocketW/4, rocketH/2,
+             0, rocketH/2 + flameH);
+  }
+
   pop();
 
   // ---- Cat orbiting the Sun ----
@@ -133,3 +143,4 @@ function draw() {
   let catY = height/2 + catOrbitRadius * sin(catOrbitAngle);
   image(catImg, catX, catY, 100, 100);
 }
+
