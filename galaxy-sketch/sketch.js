@@ -1,4 +1,4 @@
-// ----- Global variables -----
+/// ----- Global variables -----
 let galaxy, sunImg, earthImg, catImg;
 let bounce;
 
@@ -23,6 +23,9 @@ let catOrbitAngle = 0;
 let catOrbitSpeed = 0.02;   // slower orbit
 let catOrbitRadius = 200;   // stays inside galaxy
 
+// Sound control
+let soundEnabled = false;
+
 function preload() {
   // Load images
   galaxy = loadImage("data/galaxy.jpg");
@@ -38,9 +41,8 @@ function setup() {
   createCanvas(800, 600);
   imageMode(CENTER);
 
-  // Enable sound once user interacts (click or key)
+  // Enable sound after click
   userStartAudio();
-
   shipY = height - 100;
 }
 
@@ -70,7 +72,7 @@ function draw() {
 
   // Play tick when Earth crosses right side
   if (abs(sin(angle)) < 0.01 && !tickedThisOrbit) {
-    if (bounce) bounce.play();
+    if (bounce && bounce.isLoaded() && soundEnabled) bounce.play();
     tickedThisOrbit = true;
   }
   if (abs(sin(angle)) > 0.2) {
@@ -89,7 +91,7 @@ function draw() {
     if (shipY < -150) {
       shipY = height - 100;
       shipMoving = false;
-      if (bounce) bounce.play();
+      if (bounce && bounce.isLoaded() && soundEnabled) bounce.play();
     }
   }
 
@@ -140,4 +142,17 @@ function draw() {
   let catX = width/2 + catOrbitRadius * cos(catOrbitAngle);
   let catY = height/2 + catOrbitRadius * sin(catOrbitAngle);
   image(catImg, catX, catY, 100, 100);
+
+  // ---- Sound message ----
+  if (!soundEnabled) {
+    fill(255);
+    textAlign(CENTER, CENTER);
+    textSize(20);
+    text("🔊 Click anywhere to enable sound", width/2, height - 30);
+  }
+}
+
+function mousePressed() {
+  // First click enables sound fully
+  soundEnabled = true;
 }
