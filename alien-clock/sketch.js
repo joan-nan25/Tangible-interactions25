@@ -24,13 +24,13 @@ function setup() {
   createCanvas(800, 600);
   angleMode(RADIANS);
 
-  // planets
-  planets.push(createVector(width * 0.3, height / 2));
-  planets.push(createVector(width * 0.7, height / 2));
+  // planets closer to center
+  planets.push(createVector(width * 0.4, height / 2));
+  planets.push(createVector(width * 0.6, height / 2));
 
-  // starting asteroids
-  asteroids.push(makeAsteroid(0, 140, 20, 0));
-  asteroids.push(makeAsteroid(1, 140, 20, 0));
+  // starting asteroids with slightly bigger orbits
+  asteroids.push(makeAsteroid(0, 160, 20, 0));
+  asteroids.push(makeAsteroid(1, 160, 20, 0));
 
   // starfield
   for (let i = 0; i < 200; i++) {
@@ -57,7 +57,7 @@ function draw() {
     drawAsteroid(a.x, a.y, a.size, a.col, a.rotation);
   }
 
-  // check for collisions
+  // check collisions
   checkCollisions();
 
   // update & draw particles
@@ -99,7 +99,7 @@ function makeAsteroid(planetIndex, orbitR, size, generation) {
     baseOrbit: orbitR,
     orbitRadius: orbitR,
     size: size,
-    col: color(139, 69, 19), // brownish asteroids
+    col: color(139, 69, 19), // brown asteroids
     generation,
     x: 0,
     y: 0,
