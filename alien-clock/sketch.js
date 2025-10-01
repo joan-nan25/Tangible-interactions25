@@ -2,6 +2,9 @@ let planets = [];
 let asteroids = [];
 let collisionSound, crackSound, rattleSound;
 
+let clashInterval = 5000; // every 5 seconds
+let lastClash = 0;
+
 function preload() {
   soundFormats('mp3', 'wav');
   collisionSound = loadSound('assets/collision.wav');
@@ -13,14 +16,13 @@ function setup() {
   createCanvas(800, 600);
   angleMode(RADIANS);
 
-  // two planets
-  planets.push(createVector(width * 0.3, height / 2));
-  planets.push(createVector(width * 0.7, height / 2));
+  // two planets, closer together
+  planets.push(createVector(width * 0.4, height / 2));
+  planets.push(createVector(width * 0.6, height / 2));
 
-  // asteroids orbiting each planet (generation 0 = original)
+  // one asteroid per planet
   for (let i = 0; i < planets.length; i++) {
     asteroids.push(makeAsteroid(i, 80, 15, 0));
-    asteroids.push(makeAsteroid(i, 120, 15, 0));
   }
 }
 
@@ -37,43 +39,32 @@ function draw() {
   // update & draw asteroids
   for (let a of asteroids) {
     let planet = planets[a.planetIndex];
-    a.angle += a.speed;
+    a.angle -= a.speed; // counterclockwise
     let x = planet.x + cos(a.angle) * a.orbitRadius;
     let y = planet.y + sin(a.angle) * a.orbitRadius;
 
     fill(a.col);
     ellipse(x, y, a.size);
 
-    // reset color gradually
+    // reset asteroid color slowly
     a.col = lerpColor(a.col, color(200), 0.05);
+  }
 
-    // check for collisions
-    for (let b of asteroids) {
-      if (a !== b && a.planetIndex === b.planetIndex) {
-        let bx = planet.x + cos(b.angle) * b.orbitRadius;
-        let by = planet.y + sin(b.angle) * b.orbitRadius;
-        let d = dist(x, y, bx, by);
-
-        if (d < (a.size + b.size) * 0.5) {
-          a.col = color(255, 100, 100);
-          b.col = color(255, 100, 100);
-
-          playCollisionSounds();      
-          spawnAsteroid(a.planetIndex, a.generation + 1); // ✅ pass next generation
-        }
-      }
-    }
+  // check clash timer
+  if (millis() - lastClash > clashInterval) {
+    clashEvent();
+    lastClash = millis();
   }
 }
 
 // ------- Helpers -------
 
-// make a new asteroid
+// asteroid factory
 function makeAsteroid(planetIndex, orbitR, size, generation) {
   return {
     planetIndex: planetIndex,
     angle: random(TWO_PI),
-    speed: random(0.01, 0.03),
+    speed: 0.02,
     orbitRadius: orbitR,
     size: size,
     col: color(200),
@@ -81,51 +72,61 @@ function makeAsteroid(planetIndex, orbitR, size, generation) {
   };
 }
 
-// spawn a new asteroid after collision
+// what happens on clash
+function clashEvent() {
+  if (asteroids.length < 2) return;
+
+  // flash red
+  for (let a of asteroids) {
+    a.col = color(255, 100, 100);
+  }
+
+  // spawn a new asteroid for each planet
+  for (let i = 0; i < planets.length; i++) {
+    let gen = asteroids.filter(a => a.planetIndex === i).length;
+    spawnAsteroid(i, gen);
+  }
+
+  // play sounds
+  playCollisionSounds();
+}
+
+// spawn new asteroid
 function spawnAsteroid(planetIndex, generation) {
-  let newSize = max(5, 15 - generation * 2); // shrink by 2px per generation, min size = 5
+  let newSize = max(5, 15 - generation * 2); // shrink with generations
   asteroids.push({
     planetIndex: planetIndex,
     angle: random(TWO_PI),
-    speed: random(0.01, 0.03),
-    orbitRadius: random(60, 140),
+    speed: 0.02,
+    orbitRadius: random(60, 100),
     size: newSize,
     col: color(255, 200, 100),
     generation: generation
   });
 }
 
-// handle sound cascade
+// sound cascade
 function playCollisionSounds() {
-  if (!collisionSound.isPlaying()) {
-    collisionSound.play();   // sharp tick
+  collisionSound.play(); // tick
 
-    // crack comes a little later with random delay
-    let crackDelay = int(random(100, 200)); // 100–200ms
-    setTimeout(() => {
-      crackSound.play();
-    }, crackDelay);
+  let crackDelay = int(random(100, 200));
+  setTimeout(() => crackSound.play(), crackDelay);
 
-    // rattle starts immediately, no overlap
-    if (rattleSound.isPlaying()) {
-      rattleSound.stop();
-    }
-    rattleSound.setVolume(0);
-    rattleSound.play();
-
-    // fade in
-    rattleSound.fade(0.6, 1.5);
-
-    // fade out after 3s
-    setTimeout(() => {
-      if (rattleSound.isPlaying()) {
-        rattleSound.fade(0, 2);
-      }
-    }, 3000);
+  if (rattleSound.isPlaying()) {
+    rattleSound.stop();
   }
+  rattleSound.setVolume(0);
+  rattleSound.play();
+  rattleSound.fade(0.6, 1.5);
+
+  setTimeout(() => {
+    if (rattleSound.isPlaying()) {
+      rattleSound.fade(0, 2);
+    }
+  }, 3000);
 }
 
-// unlock audio on click (browser policy)
+// unlock audio on click
 function mousePressed() {
   userStartAudio();
 }
