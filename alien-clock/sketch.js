@@ -16,23 +16,23 @@ function preload() {
   collisionSound = loadSound('assets/collision.wav');
   crackSound     = loadSound('assets/crack.wav');
   rattleSound    = loadSound('assets/rattle.wav');
-  bgImage        = loadImage('assets/space-bg.jpg'); // rename file or update here
+  bgImage        = loadImage('assets/space-bg.jpg'); // rename file if needed
 }
 
 function setup() {
   createCanvas(800, 600);
   angleMode(RADIANS);
 
-  // planets
-  planets.push(createVector(width * 0.35, height / 2));
-  planets.push(createVector(width * 0.65, height / 2));
+  // planets farther apart
+  planets.push(createVector(width * 0.3, height / 2));
+  planets.push(createVector(width * 0.7, height / 2));
 
-  // one asteroid per planet
+  // one big asteroid per planet, orbiting farther out
   for (let i = 0; i < planets.length; i++) {
-    asteroids.push(makeAsteroid(i, 100, 15, 0));
+    asteroids.push(makeAsteroid(i, 140, 20, 0));
   }
 
-  // stars
+  // starfield
   for (let i = 0; i < 200; i++) {
     stars.push({ x: random(width), y: random(height), size: random(1, 3), alpha: random(100, 255) });
   }
@@ -55,19 +55,18 @@ function draw() {
   for (let a of asteroids) {
     let planet = planets[a.planetIndex];
 
-    // orbit
     let prevAngle = a.angle;
     a.angle -= a.speed;
     if (prevAngle > PI && a.angle <= PI) {
-      // completed one orbit
       a.orbits++;
     }
 
-    // check if slingshot event
     if (a.orbits >= 3) {
+      // slingshot to middle
       a.x = (planets[0].x + planets[1].x) / 2;
       a.y = (planets[0].y + planets[1].y) / 2;
     } else {
+      // orbiting
       a.x = planet.x + cos(a.angle) * a.orbitRadius;
       a.y = planet.y + sin(a.angle) * a.orbitRadius;
     }
@@ -79,7 +78,7 @@ function draw() {
     a.col = lerpColor(a.col, color(139, 69, 19), 0.05);
   }
 
-  // if both asteroids reached middle after 3 orbits → collision
+  // check collision only after 3 orbits
   let groupA = asteroids.filter(a => a.planetIndex === 0);
   let groupB = asteroids.filter(a => a.planetIndex === 1);
 
@@ -116,7 +115,7 @@ function makeAsteroid(planetIndex, orbitR, size, generation) {
     angle,
     speed: 0.02,
     orbitRadius: orbitR,
-    size,
+    size: size,
     col: color(139, 69, 19),
     generation,
     x: planet.x + cos(angle) * orbitR,
@@ -134,8 +133,9 @@ function handleSlingshotCollision(a, b) {
   a.col = color(255, 100, 100);
   b.col = color(255, 100, 100);
 
-  spawnAsteroid(a.planetIndex, a.generation + 1);
-  spawnAsteroid(b.planetIndex, b.generation + 1);
+  // spawn only one asteroid per collision
+  let parent = random([a, b]);
+  spawnAsteroid(parent.planetIndex, parent.generation + 1, parent.size);
 
   if (alienYear > 0) {
     alienYear--;
@@ -144,9 +144,9 @@ function handleSlingshotCollision(a, b) {
   playCollisionSounds();
 }
 
-function spawnAsteroid(planetIndex, generation) {
-  let newSize = max(5, 15 - generation * 2);
-  asteroids.push(makeAsteroid(planetIndex, random(80, 120), newSize, generation));
+function spawnAsteroid(planetIndex, generation, parentSize = 20) {
+  let newSize = max(5, parentSize - 3); // shrink by 3px, min size 5
+  asteroids.push(makeAsteroid(planetIndex, random(120, 160), newSize, generation));
 }
 
 function drawAsteroid(x, y, r, col, rot) {
