@@ -27,10 +27,9 @@ function setup() {
   planets.push(createVector(width * 0.3, height / 2));
   planets.push(createVector(width * 0.7, height / 2));
 
-  // one big asteroid per planet, orbiting farther out
-  for (let i = 0; i < planets.length; i++) {
-    asteroids.push(makeAsteroid(i, 140, 20, 0));
-  }
+  // one big asteroid per planet
+  asteroids.push(makeAsteroid(0, 140, 20, 0)); // Planet 0, CCW, gen 0
+  asteroids.push(makeAsteroid(1, 140, 20, 0)); // Planet 1, CW, gen 0
 
   // starfield
   for (let i = 0; i < 200; i++) {
@@ -63,17 +62,20 @@ function draw() {
       a.angle += a.speed; // clockwise
     }
 
-    // orbit count
-    if (prevAngle % TWO_PI > a.angle % TWO_PI) {
+    // check full orbit
+    if ((a.planetIndex === 0 && prevAngle < 0 && a.angle >= 0) ||
+        (a.planetIndex === 1 && prevAngle > TWO_PI && a.angle <= TWO_PI)) {
       a.orbits++;
     }
 
-    if (a.orbits >= 3) {
+    // check threshold
+    let threshold = a.generation === 0 ? 3 : 6;
+    if (a.orbits >= threshold) {
       // slingshot to middle
       a.x = (planets[0].x + planets[1].x) / 2;
       a.y = (planets[0].y + planets[1].y) / 2;
     } else {
-      // normal orbit
+      // orbit
       a.x = planet.x + cos(a.angle) * a.orbitRadius;
       a.y = planet.y + sin(a.angle) * a.orbitRadius;
     }
@@ -85,13 +87,16 @@ function draw() {
     a.col = lerpColor(a.col, color(139, 69, 19), 0.05);
   }
 
-  // check collisions at center
-  let groupA = asteroids.filter(a => a.planetIndex === 0 && a.orbits >= 3);
-  let groupB = asteroids.filter(a => a.planetIndex === 1 && a.orbits >= 3);
+  // collision check
+  let groupA = asteroids.filter(a => a.planetIndex === 0 && aReady(a));
+  let groupB = asteroids.filter(a => a.planetIndex === 1 && aReady(a));
 
   for (let a of groupA) {
     for (let b of groupB) {
-      handleSlingshotCollision(a, b);
+      let d = dist(a.x, a.y, b.x, b.y);
+      if (d < (a.size + b.size) * 0.6) {
+        handleSlingshotCollision(a, b);
+      }
     }
   }
 
@@ -132,8 +137,14 @@ function makeAsteroid(planetIndex, orbitR, size, generation) {
     rotation: random(TWO_PI),
     rotSpeed: random(-0.02, 0.02),
     orbits: 0,
-    hasCollided: false // to prevent multiple collisions per cycle
+    hasCollided: false
   };
+}
+
+// asteroid ready to collide?
+function aReady(a) {
+  let threshold = a.generation === 0 ? 3 : 6;
+  return a.orbits >= threshold;
 }
 
 function handleSlingshotCollision(a, b) {
@@ -148,7 +159,7 @@ function handleSlingshotCollision(a, b) {
   a.col = color(255, 100, 100);
   b.col = color(255, 100, 100);
 
-  // spawn only one asteroid per collision
+  // spawn one smaller asteroid
   let parent = random([a, b]);
   spawnAsteroid(parent.planetIndex, parent.generation + 1, parent.size);
 
@@ -160,7 +171,7 @@ function handleSlingshotCollision(a, b) {
 }
 
 function spawnAsteroid(planetIndex, generation, parentSize = 20) {
-  let newSize = max(5, parentSize - 3); // shrink by 3px, min size 5
+  let newSize = max(5, parentSize - 3);
   let child = makeAsteroid(planetIndex, random(120, 160), newSize, generation);
   asteroids.push(child);
 }
