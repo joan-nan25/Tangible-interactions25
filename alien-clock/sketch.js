@@ -4,6 +4,7 @@ let collisionSound, crackSound, rattleSound;
 
 let clashInterval = 5000; // every 5 seconds
 let lastClash = 0;
+let colliding = false;
 
 function preload() {
   soundFormats('mp3', 'wav');
@@ -39,21 +40,35 @@ function draw() {
   // update & draw asteroids
   for (let a of asteroids) {
     let planet = planets[a.planetIndex];
-    a.angle -= a.speed; // counterclockwise
-    let x = planet.x + cos(a.angle) * a.orbitRadius;
-    let y = planet.y + sin(a.angle) * a.orbitRadius;
+
+    if (!colliding) {
+      // normal orbit
+      a.angle -= a.speed; // counterclockwise
+      a.x = planet.x + cos(a.angle) * a.orbitRadius;
+      a.y = planet.y + sin(a.angle) * a.orbitRadius;
+    } else {
+      // move toward midpoint
+      let midX = (planets[0].x + planets[1].x) / 2;
+      let midY = (planets[0].y + planets[1].y) / 2;
+      a.x = lerp(a.x, midX, 0.1);
+      a.y = lerp(a.y, midY, 0.1);
+    }
 
     fill(a.col);
-    ellipse(x, y, a.size);
+    ellipse(a.x, a.y, a.size);
 
     // reset asteroid color slowly
     a.col = lerpColor(a.col, color(200), 0.05);
   }
 
   // check clash timer
-  if (millis() - lastClash > clashInterval) {
-    clashEvent();
-    lastClash = millis();
+  if (millis() - lastClash > clashInterval && !colliding) {
+    colliding = true;
+    setTimeout(() => {
+      clashEvent();
+      colliding = false;
+      lastClash = millis();
+    }, 1500); // allow asteroids ~1.5s to move inward
   }
 }
 
@@ -61,14 +76,18 @@ function draw() {
 
 // asteroid factory
 function makeAsteroid(planetIndex, orbitR, size, generation) {
+  let planet = planets[planetIndex];
+  let angle = random(TWO_PI);
   return {
     planetIndex: planetIndex,
-    angle: random(TWO_PI),
+    angle: angle,
     speed: 0.02,
     orbitRadius: orbitR,
     size: size,
     col: color(200),
-    generation: generation
+    generation: generation,
+    x: planet.x + cos(angle) * orbitR,
+    y: planet.y + sin(angle) * orbitR
   };
 }
 
@@ -94,15 +113,7 @@ function clashEvent() {
 // spawn new asteroid
 function spawnAsteroid(planetIndex, generation) {
   let newSize = max(5, 15 - generation * 2); // shrink with generations
-  asteroids.push({
-    planetIndex: planetIndex,
-    angle: random(TWO_PI),
-    speed: 0.02,
-    orbitRadius: random(60, 100),
-    size: newSize,
-    col: color(255, 200, 100),
-    generation: generation
-  });
+  asteroids.push(makeAsteroid(planetIndex, random(60, 100), newSize, generation));
 }
 
 // sound cascade
