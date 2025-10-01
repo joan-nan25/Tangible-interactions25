@@ -3,6 +3,7 @@ let asteroids = [];
 let collisionSound, crackSound, rattleSound;
 let bgImage;
 let stars = [];
+let particles = [];
 
 // Roman numeral countdown
 let alienYear = 100;
@@ -28,8 +29,8 @@ function setup() {
   planets.push(createVector(width * 0.7, height / 2));
 
   // one big asteroid per planet
-  asteroids.push(makeAsteroid(0, 140, 20, 0)); // Planet 0, CCW, gen 0
-  asteroids.push(makeAsteroid(1, 140, 20, 0)); // Planet 1, CW, gen 0
+  asteroids.push(makeAsteroid(0, 140, 20, 0));
+  asteroids.push(makeAsteroid(1, 140, 20, 0));
 
   // starfield
   for (let i = 0; i < 200; i++) {
@@ -62,20 +63,28 @@ function draw() {
       a.angle += a.speed; // clockwise
     }
 
-    // check full orbit
+    // detect orbit completion
     if ((a.planetIndex === 0 && prevAngle < 0 && a.angle >= 0) ||
         (a.planetIndex === 1 && prevAngle > TWO_PI && a.angle <= TWO_PI)) {
       a.orbits++;
     }
 
-    // check threshold
+    // threshold: originals after 3, children after 6
     let threshold = a.generation === 0 ? 3 : 6;
+
+    if (a.orbits >= threshold - 1) {
+      // BOOST speed on final orbit
+      a.speed = a.baseSpeed * 3;
+    } else {
+      a.speed = a.baseSpeed;
+    }
+
     if (a.orbits >= threshold) {
-      // slingshot to middle
+      // move to middle for collision
       a.x = (planets[0].x + planets[1].x) / 2;
       a.y = (planets[0].y + planets[1].y) / 2;
     } else {
-      // orbit
+      // normal orbit
       a.x = planet.x + cos(a.angle) * a.orbitRadius;
       a.y = planet.y + sin(a.angle) * a.orbitRadius;
     }
@@ -84,7 +93,7 @@ function draw() {
     a.rotation += a.rotSpeed;
 
     drawAsteroid(a.x, a.y, a.size, a.col, a.rotation);
-    a.col = lerpColor(a.col, color(139, 69, 19), 0.05);
+    a.col = lerpColor(a.col, color(0), 0.05);
   }
 
   // collision check
@@ -97,6 +106,15 @@ function draw() {
       if (d < (a.size + b.size) * 0.6) {
         handleSlingshotCollision(a, b);
       }
+    }
+  }
+
+  // update and draw particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    particles[i].update();
+    particles[i].show();
+    if (particles[i].finished()) {
+      particles.splice(i, 1);
     }
   }
 
@@ -124,13 +142,15 @@ function draw() {
 function makeAsteroid(planetIndex, orbitR, size, generation) {
   let planet = planets[planetIndex];
   let angle = random(TWO_PI);
+  let baseSpeed = 0.02;
   return {
     planetIndex,
     angle,
-    speed: 0.02,
+    speed: baseSpeed,
+    baseSpeed: baseSpeed,
     orbitRadius: orbitR,
     size: size,
-    col: color(139, 69, 19),
+    col: color(0), // black asteroids
     generation,
     x: planet.x + cos(angle) * orbitR,
     y: planet.y + sin(angle) * orbitR,
@@ -155,25 +175,64 @@ function handleSlingshotCollision(a, b) {
 
   a.orbits = 0;
   b.orbits = 0;
+  a.speed = a.baseSpeed;
+  b.speed = b.baseSpeed;
 
-  a.col = color(255, 100, 100);
-  b.col = color(255, 100, 100);
+  a.col = color(255, 80, 80); // red flash
+  b.col = color(255, 80, 80);
 
   // spawn one smaller asteroid
   let parent = random([a, b]);
   spawnAsteroid(parent.planetIndex, parent.generation + 1, parent.size);
 
-  if (alienYear > 0) {
-    alienYear--;
-  }
+  if (alienYear > 0) alienYear--;
 
   playCollisionSounds();
+
+  // sparks burst
+  let cx = (a.x + b.x) / 2;
+  let cy = (a.y + b.y) / 2;
+  for (let i = 0; i < 30; i++) {
+    particles.push(new Particle(cx, cy));
+  }
 }
 
 function spawnAsteroid(planetIndex, generation, parentSize = 20) {
   let newSize = max(5, parentSize - 3);
   let child = makeAsteroid(planetIndex, random(120, 160), newSize, generation);
   asteroids.push(child);
+}
+
+// ---- Particle system ----
+class Particle {
+  constructor(x, y) {
+    this.pos = createVector(x, y);
+    this.vel = p5.Vector.random2D().mult(random(1, 3));
+    this.alpha = 255;
+    this.size = random(3, 6);
+
+    // brown/orange sparks
+    let options = [
+      color(139, 69, 19, this.alpha),   // brown
+      color(255, 140, 0, this.alpha)    // orange
+    ];
+    this.col = random(options);
+  }
+
+  update() {
+    this.pos.add(this.vel);
+    this.alpha -= 5;
+  }
+
+  finished() {
+    return this.alpha < 0;
+  }
+
+  show() {
+    noStroke();
+    fill(red(this.col), green(this.col), blue(this.col), this.alpha);
+    ellipse(this.pos.x, this.pos.y, this.size);
+  }
 }
 
 function drawAsteroid(x, y, r, col, rot) {
@@ -217,7 +276,6 @@ function mousePressed() {
   }
 }
 
-// Roman numerals table generator
 function romanTable(n) {
   const map = {M:1000,CM:900,D:500,CD:400,C:100,XC:90,L:50,XL:40,X:10,IX:9,V:5,IV:4,I:1};
   let table = {};
