@@ -4,44 +4,38 @@ let collisionSound, crackSound, rattleSound;
 let bgImage;
 let stars = [];
 
-// ---- clash timing ----
-let colliding = false;
-let nextClashAt = 0;
-let clashDuration = 1800;
-let clashEndAt = 0;
-let currentClashId = 0;
+// Roman numeral countdown
+let alienYear = 100;
+let romanNumerals = romanTable(100);
 
-// ---- alien time counter ----
-let alienTime = 0;
+// sound state
+let soundReady = false;
 
 function preload() {
   soundFormats('mp3', 'wav');
   collisionSound = loadSound('assets/collision.wav');
   crackSound     = loadSound('assets/crack.wav');
   rattleSound    = loadSound('assets/rattle.wav');
-  bgImage        = loadImage('assets/space-bg.jpg'); // your gradient background
+  bgImage        = loadImage('assets/space-bg.jpg'); // rename file or update here
 }
 
 function setup() {
   createCanvas(800, 600);
   angleMode(RADIANS);
 
+  // planets
   planets.push(createVector(width * 0.35, height / 2));
   planets.push(createVector(width * 0.65, height / 2));
 
+  // one asteroid per planet
   for (let i = 0; i < planets.length; i++) {
     asteroids.push(makeAsteroid(i, 100, 15, 0));
   }
 
-  // rattle will only play after user click due to browser policy
-  rattleSound.setLoop(true);
-  rattleSound.setVolume(0.4);
-
+  // stars
   for (let i = 0; i < 200; i++) {
     stars.push({ x: random(width), y: random(height), size: random(1, 3), alpha: random(100, 255) });
   }
-
-  nextClashAt = millis() + 5000; // first clash at 5s
 }
 
 function draw() {
@@ -57,71 +51,66 @@ function draw() {
   // planets
   for (let p of planets) drawPlanet(p.x, p.y, 110);
 
-  let now = millis();
-  if (!colliding && now >= nextClashAt) {
-    colliding = true;
-    clashEndAt = now + clashDuration;
-    currentClashId++;
-  }
-
-  // asteroids
+  // update asteroids
   for (let a of asteroids) {
     let planet = planets[a.planetIndex];
 
-    if (colliding) {
-      let midX = (planets[0].x + planets[1].x) / 2;
-      let midY = (planets[0].y + planets[1].y) / 2;
-      a.x = lerp(a.x, midX, 0.12);
-      a.y = lerp(a.y, midY, 0.12);
+    // orbit
+    let prevAngle = a.angle;
+    a.angle -= a.speed;
+    if (prevAngle > PI && a.angle <= PI) {
+      // completed one orbit
+      a.orbits++;
+    }
+
+    // check if slingshot event
+    if (a.orbits >= 3) {
+      a.x = (planets[0].x + planets[1].x) / 2;
+      a.y = (planets[0].y + planets[1].y) / 2;
     } else {
-      a.angle -= a.speed;
       a.x = planet.x + cos(a.angle) * a.orbitRadius;
       a.y = planet.y + sin(a.angle) * a.orbitRadius;
     }
 
+    // spin
     a.rotation += a.rotSpeed;
+
     drawAsteroid(a.x, a.y, a.size, a.col, a.rotation);
     a.col = lerpColor(a.col, color(139, 69, 19), 0.05);
   }
 
-  // collisions
-  if (colliding) {
-    let groupA = asteroids.filter(t => t.planetIndex === 0);
-    let groupB = asteroids.filter(t => t.planetIndex === 1);
+  // if both asteroids reached middle after 3 orbits → collision
+  let groupA = asteroids.filter(a => a.planetIndex === 0);
+  let groupB = asteroids.filter(a => a.planetIndex === 1);
 
-    for (let a of groupA) {
-      for (let b of groupB) {
-        let d = dist(a.x, a.y, b.x, b.y);
-        if (d < (a.size + b.size) * 0.55) {
-          handleCollisionOncePerWindow(a, b);
-        }
-      }
-    }
-
-    if (now >= clashEndAt) {
-      colliding = false;
-      nextClashAt = clashEndAt + 10000; // every 10s after first
-    }
+  if (groupA.some(a => a.orbits >= 3) && groupB.some(b => b.orbits >= 3)) {
+    handleSlingshotCollision(groupA[0], groupB[0]);
   }
 
-  // alien time counter
+  // Alien year display
   fill(255);
-  textSize(18);
-  textAlign(LEFT, TOP);
-  text("Alien Time: " + alienTime, 20, 20);
+  textSize(20);
+  textAlign(CENTER, TOP);
+  if (alienYear >= 1) {
+    text("Alien Year: " + romanNumerals[alienYear], width / 2, 20);
+  } else {
+    text("Alien Time has ended", width / 2, 20);
+  }
 
   // sound note
-  textSize(12);
-  textAlign(CENTER, BOTTOM);
-  fill(200);
-  text("Click anywhere to enable sound", width / 2, height - 10);
+  if (!soundReady) {
+    textSize(12);
+    fill(200);
+    textAlign(CENTER, BOTTOM);
+    text("Click anywhere to enable sound", width / 2, height - 10);
+  }
 }
 
 /* ----------------- helpers ----------------- */
 
 function makeAsteroid(planetIndex, orbitR, size, generation) {
-  const planet = planets[planetIndex];
-  const angle = random(TWO_PI);
+  let planet = planets[planetIndex];
+  let angle = random(TWO_PI);
   return {
     planetIndex,
     angle,
@@ -134,23 +123,22 @@ function makeAsteroid(planetIndex, orbitR, size, generation) {
     y: planet.y + sin(angle) * orbitR,
     rotation: random(TWO_PI),
     rotSpeed: random(-0.02, 0.02),
-    lastClashProcessed: -1
+    orbits: 0
   };
 }
 
-function handleCollisionOncePerWindow(a, b) {
-  if (a.lastClashProcessed === currentClashId && b.lastClashProcessed === currentClashId) return;
+function handleSlingshotCollision(a, b) {
+  a.orbits = 0;
+  b.orbits = 0;
 
   a.col = color(255, 100, 100);
   b.col = color(255, 100, 100);
 
-  if (a.lastClashProcessed !== currentClashId) {
-    spawnAsteroid(a.planetIndex, a.generation + 1);
-    a.lastClashProcessed = currentClashId;
-  }
-  if (b.lastClashProcessed !== currentClashId) {
-    spawnAsteroid(b.planetIndex, b.generation + 1);
-    b.lastClashProcessed = currentClashId;
+  spawnAsteroid(a.planetIndex, a.generation + 1);
+  spawnAsteroid(b.planetIndex, b.generation + 1);
+
+  if (alienYear > 0) {
+    alienYear--;
   }
 
   playCollisionSounds();
@@ -159,7 +147,6 @@ function handleCollisionOncePerWindow(a, b) {
 function spawnAsteroid(planetIndex, generation) {
   let newSize = max(5, 15 - generation * 2);
   asteroids.push(makeAsteroid(planetIndex, random(80, 120), newSize, generation));
-  alienTime++; // increment alien time counter
 }
 
 function drawAsteroid(x, y, r, col, rot) {
@@ -196,8 +183,26 @@ function playCollisionSounds() {
 }
 
 function mousePressed() {
-  userStartAudio(); // starts sound on first click
+  userStartAudio();
   if (!rattleSound.isPlaying()) {
-    rattleSound.play();
+    rattleSound.loop();
+    soundReady = true;
   }
+}
+
+// Roman numerals table generator
+function romanTable(n) {
+  const map = {M:1000,CM:900,D:500,CD:400,C:100,XC:90,L:50,XL:40,X:10,IX:9,V:5,IV:4,I:1};
+  let table = {};
+  for (let i = 1; i <= n; i++) {
+    let num = i, str = "";
+    for (let k in map) {
+      while (num >= map[k]) {
+        str += k;
+        num -= map[k];
+      }
+    }
+    table[i] = str;
+  }
+  return table;
 }
