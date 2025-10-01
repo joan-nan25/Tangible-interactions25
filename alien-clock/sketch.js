@@ -2,10 +2,6 @@ let planets = [];
 let asteroids = [];
 let collisionSound, crackSound, rattleSound;
 
-let clashInterval = 5000; // every 5 seconds
-let lastClash = 0;
-let colliding = false;
-
 function preload() {
   soundFormats('mp3', 'wav');
   collisionSound = loadSound('assets/collision.wav');
@@ -17,7 +13,7 @@ function setup() {
   createCanvas(800, 600);
   angleMode(RADIANS);
 
-  // two planets, closer together
+  // two planets, closer
   planets.push(createVector(width * 0.4, height / 2));
   planets.push(createVector(width * 0.6, height / 2));
 
@@ -25,6 +21,11 @@ function setup() {
   for (let i = 0; i < planets.length; i++) {
     asteroids.push(makeAsteroid(i, 80, 15, 0));
   }
+
+  // continuous ambient rattle
+  rattleSound.setLoop(true);
+  rattleSound.setVolume(0.4);
+  rattleSound.play();
 }
 
 function draw() {
@@ -41,34 +42,29 @@ function draw() {
   for (let a of asteroids) {
     let planet = planets[a.planetIndex];
 
-    if (!colliding) {
-      // normal orbit
-      a.angle -= a.speed; // counterclockwise
-      a.x = planet.x + cos(a.angle) * a.orbitRadius;
-      a.y = planet.y + sin(a.angle) * a.orbitRadius;
-    } else {
-      // move toward midpoint
-      let midX = (planets[0].x + planets[1].x) / 2;
-      let midY = (planets[0].y + planets[1].y) / 2;
-      a.x = lerp(a.x, midX, 0.1);
-      a.y = lerp(a.y, midY, 0.1);
-    }
+    // orbit
+    a.angle -= a.speed;
+    a.x = planet.x + cos(a.angle) * a.orbitRadius;
+    a.y = planet.y + sin(a.angle) * a.orbitRadius;
 
     fill(a.col);
     ellipse(a.x, a.y, a.size);
 
-    // reset asteroid color slowly
+    // slowly fade back to gray
     a.col = lerpColor(a.col, color(200), 0.05);
   }
 
-  // check clash timer
-  if (millis() - lastClash > clashInterval && !colliding) {
-    colliding = true;
-    setTimeout(() => {
-      clashEvent();
-      colliding = false;
-      lastClash = millis();
-    }, 1500); // allow asteroids ~1.5s to move inward
+  // check collisions between planet A + planet B asteroids
+  let groupA = asteroids.filter(a => a.planetIndex === 0);
+  let groupB = asteroids.filter(a => a.planetIndex === 1);
+
+  for (let a of groupA) {
+    for (let b of groupB) {
+      let d = dist(a.x, a.y, b.x, b.y);
+      if (d < (a.size + b.size) * 0.5) {
+        handleCollision(a, b);
+      }
+    }
   }
 }
 
@@ -91,28 +87,23 @@ function makeAsteroid(planetIndex, orbitR, size, generation) {
   };
 }
 
-// what happens on clash
-function clashEvent() {
-  if (asteroids.length < 2) return;
-
+// collision event
+function handleCollision(a, b) {
   // flash red
-  for (let a of asteroids) {
-    a.col = color(255, 100, 100);
-  }
+  a.col = color(255, 100, 100);
+  b.col = color(255, 100, 100);
 
-  // spawn a new asteroid for each planet
-  for (let i = 0; i < planets.length; i++) {
-    let gen = asteroids.filter(a => a.planetIndex === i).length;
-    spawnAsteroid(i, gen);
-  }
+  // spawn child asteroid from each parent
+  spawnAsteroid(a.planetIndex, a.generation + 1);
+  spawnAsteroid(b.planetIndex, b.generation + 1);
 
   // play sounds
   playCollisionSounds();
 }
 
-// spawn new asteroid
+// spawn new asteroid near planet
 function spawnAsteroid(planetIndex, generation) {
-  let newSize = max(5, 15 - generation * 2); // shrink with generations
+  let newSize = max(5, 15 - generation * 2);
   asteroids.push(makeAsteroid(planetIndex, random(60, 100), newSize, generation));
 }
 
@@ -122,19 +113,6 @@ function playCollisionSounds() {
 
   let crackDelay = int(random(100, 200));
   setTimeout(() => crackSound.play(), crackDelay);
-
-  if (rattleSound.isPlaying()) {
-    rattleSound.stop();
-  }
-  rattleSound.setVolume(0);
-  rattleSound.play();
-  rattleSound.fade(0.6, 1.5);
-
-  setTimeout(() => {
-    if (rattleSound.isPlaying()) {
-      rattleSound.fade(0, 2);
-    }
-  }, 3000);
 }
 
 // unlock audio on click
