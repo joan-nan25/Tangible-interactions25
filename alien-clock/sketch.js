@@ -54,10 +54,17 @@ function draw() {
   // update asteroids
   for (let a of asteroids) {
     let planet = planets[a.planetIndex];
-
     let prevAngle = a.angle;
-    a.angle -= a.speed;
-    if (prevAngle > PI && a.angle <= PI) {
+
+    // orbit direction
+    if (a.planetIndex === 0) {
+      a.angle -= a.speed; // counterclockwise
+    } else {
+      a.angle += a.speed; // clockwise
+    }
+
+    // orbit count
+    if (prevAngle % TWO_PI > a.angle % TWO_PI) {
       a.orbits++;
     }
 
@@ -66,7 +73,7 @@ function draw() {
       a.x = (planets[0].x + planets[1].x) / 2;
       a.y = (planets[0].y + planets[1].y) / 2;
     } else {
-      // orbiting
+      // normal orbit
       a.x = planet.x + cos(a.angle) * a.orbitRadius;
       a.y = planet.y + sin(a.angle) * a.orbitRadius;
     }
@@ -78,12 +85,14 @@ function draw() {
     a.col = lerpColor(a.col, color(139, 69, 19), 0.05);
   }
 
-  // check collision only after 3 orbits
-  let groupA = asteroids.filter(a => a.planetIndex === 0);
-  let groupB = asteroids.filter(a => a.planetIndex === 1);
+  // check collisions at center
+  let groupA = asteroids.filter(a => a.planetIndex === 0 && a.orbits >= 3);
+  let groupB = asteroids.filter(a => a.planetIndex === 1 && a.orbits >= 3);
 
-  if (groupA.some(a => a.orbits >= 3) && groupB.some(b => b.orbits >= 3)) {
-    handleSlingshotCollision(groupA[0], groupB[0]);
+  for (let a of groupA) {
+    for (let b of groupB) {
+      handleSlingshotCollision(a, b);
+    }
   }
 
   // Alien year display
@@ -122,11 +131,17 @@ function makeAsteroid(planetIndex, orbitR, size, generation) {
     y: planet.y + sin(angle) * orbitR,
     rotation: random(TWO_PI),
     rotSpeed: random(-0.02, 0.02),
-    orbits: 0
+    orbits: 0,
+    hasCollided: false // to prevent multiple collisions per cycle
   };
 }
 
 function handleSlingshotCollision(a, b) {
+  if (a.hasCollided || b.hasCollided) return;
+
+  a.hasCollided = true;
+  b.hasCollided = true;
+
   a.orbits = 0;
   b.orbits = 0;
 
@@ -146,7 +161,8 @@ function handleSlingshotCollision(a, b) {
 
 function spawnAsteroid(planetIndex, generation, parentSize = 20) {
   let newSize = max(5, parentSize - 3); // shrink by 3px, min size 5
-  asteroids.push(makeAsteroid(planetIndex, random(120, 160), newSize, generation));
+  let child = makeAsteroid(planetIndex, random(120, 160), newSize, generation);
+  asteroids.push(child);
 }
 
 function drawAsteroid(x, y, r, col, rot) {
