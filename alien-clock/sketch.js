@@ -12,18 +12,20 @@ let romanNumerals = romanTable(100);
 // sound state
 let soundReady = false;
 
-// --- settings ---
+// cycle system
+let cycleLength = 3;     // first gathering after 3 orbits
+let inGathering = false; // are we currently moving to the center?
+
 const PLANET_LEFT_X  = 0.3; 
 const PLANET_RIGHT_X = 0.7;
 const ORBIT_BASE_RADIUS = 140;
-const COLLISION_MOVE_SPEED = 0.1; // how fast they move to middle
 
 function preload() {
   soundFormats('mp3', 'wav');
   collisionSound = loadSound('assets/collision.wav');
   crackSound     = loadSound('assets/crack.wav');
   rattleSound    = loadSound('assets/rattle.wav');
-  bgImage        = loadImage('assets/space-bg.jpg'); // update name if needed
+  bgImage        = loadImage('assets/space-bg.jpg'); // rename if needed
 }
 
 function setup() {
@@ -35,8 +37,8 @@ function setup() {
   planets.push(createVector(width * PLANET_RIGHT_X, height / 2));
 
   // starter asteroids
-  asteroids.push(makeAsteroid(0, ORBIT_BASE_RADIUS, 20, 0));
-  asteroids.push(makeAsteroid(1, ORBIT_BASE_RADIUS, 20, 0));
+  asteroids.push(makeAsteroid(0, ORBIT_BASE_RADIUS, 20));
+  asteroids.push(makeAsteroid(1, ORBIT_BASE_RADIUS, 20));
 
   // stars
   for (let i = 0; i < 200; i++) {
@@ -58,14 +60,16 @@ function draw() {
   // planets
   for (let p of planets) drawPlanet(p.x, p.y, 110);
 
-  // update asteroids
+  // asteroids
   for (let a of asteroids) {
     updateAsteroid(a);
     drawAsteroid(a.x, a.y, a.size, a.col, a.rotation);
   }
 
-  // check for collisions
-  checkCollisions();
+  // gathering check
+  if (inGathering && asteroids.every(ast => dist(ast.x, ast.y, width/2, height/2) < 5)) {
+    performGathering();
+  }
 
   // particles
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -74,7 +78,7 @@ function draw() {
     if (particles[i].finished()) particles.splice(i, 1);
   }
 
-  // Alien year (Roman countdown)
+  // Alien year display
   fill(255);
   textSize(20);
   textAlign(CENTER, TOP);
@@ -91,11 +95,20 @@ function draw() {
     textAlign(CENTER, BOTTOM);
     text("Click anywhere to enable sound", width / 2, height - 10);
   }
+
+  // domination end condition
+  if (asteroids.length > 60) {
+    noLoop();
+    fill(255, 100, 100);
+    textSize(28);
+    textAlign(CENTER, CENTER);
+    text("Asteroids have overtaken the clock", width/2, height/2);
+  }
 }
 
 /* ----------------- asteroid logic ----------------- */
 
-function makeAsteroid(planetIndex, orbitR, size, generation) {
+function makeAsteroid(planetIndex, orbitR, size) {
   const angle = random(TWO_PI);
   return {
     planetIndex,
@@ -105,46 +118,36 @@ function makeAsteroid(planetIndex, orbitR, size, generation) {
     orbitRadius: orbitR,
     size,
     col: color(139, 69, 19),
-    generation,
     x: 0, y: 0,
     rotation: random(TWO_PI),
     rotSpeed: random(-0.02, 0.02),
-    orbits: 0,
-    hasCollided: false,
-    movingToCenter: false // new flag
+    orbits: 0
   };
 }
 
 function updateAsteroid(a) {
-  let planet = planets[a.planetIndex];
-  let prevAngle = a.angle;
-
-  if (!a.movingToCenter) {
+  if (!inGathering) {
     // orbit normally
-    if (a.planetIndex === 0) {
-      a.angle -= a.speed;
-    } else {
-      a.angle += a.speed;
-    }
+    if (a.planetIndex === 0) a.angle -= a.speed;
+    else a.angle += a.speed;
 
     // orbit completion
-    const wrappedCCW = (a.planetIndex === 0 && prevAngle < 0 && a.angle >= 0);
-    const wrappedCW  = (a.planetIndex === 1 && prevAngle > TWO_PI && a.angle <= TWO_PI);
-    if (wrappedCCW || wrappedCW) a.orbits++;
+    if (a.angle < 0) { a.angle += TWO_PI; a.orbits++; }
+    if (a.angle > TWO_PI) { a.angle -= TWO_PI; a.orbits++; }
 
-    const threshold = (a.generation === 0) ? 1 : 2;
-
-    if (a.orbits >= threshold) {
-      a.movingToCenter = true;
+    // check if all asteroids reached threshold
+    if (asteroids.every(ast => ast.orbits >= cycleLength)) {
+      inGathering = true;
     }
 
-    a.x = planet.x + cos(a.angle) * a.baseOrbit;
-    a.y = planet.y + sin(a.angle) * a.baseOrbit;
+    // normal orbit position
+    a.x = planets[a.planetIndex].x + cos(a.angle) * a.baseOrbit;
+    a.y = planets[a.planetIndex].y + sin(a.angle) * a.baseOrbit;
 
   } else {
-    // move towards middle for collision
-    a.x = lerp(a.x, width / 2, COLLISION_MOVE_SPEED);
-    a.y = lerp(a.y, height / 2, COLLISION_MOVE_SPEED);
+    // move to center
+    a.x = lerp(a.x, width/2, 0.1);
+    a.y = lerp(a.y, height/2, 0.1);
   }
 
   // spin
@@ -152,57 +155,28 @@ function updateAsteroid(a) {
   a.col = lerpColor(a.col, color(139, 69, 19), 0.05);
 }
 
-function checkCollisions() {
-  let groupA = asteroids.filter(a => a.planetIndex === 0);
-  let groupB = asteroids.filter(a => a.planetIndex === 1);
+function performGathering() {
+  // flash and spawn children
+  for (let a of asteroids) a.col = color(255, 80, 80);
 
-  for (let a of groupA) {
-    for (let b of groupB) {
-      let d = dist(a.x, a.y, b.x, b.y);
-      if (d < (a.size + b.size) * 0.6 && (a.movingToCenter || b.movingToCenter)) {
-        handleCollision(a, b);
-      }
-    }
-  }
-}
-
-function handleCollision(a, b) {
-  if (a.hasCollided || b.hasCollided) return;
-
-  a.hasCollided = b.hasCollided = true;
-
-  // flash
-  a.col = color(255, 80, 80);
-  b.col = color(255, 80, 80);
-
-  // spawn two children: one on each planet
-  spawnAsteroid(0, a.generation + 1, a.size);
-  spawnAsteroid(1, b.generation + 1, b.size);
+  spawnAsteroid(0, 20); // one new on left
+  spawnAsteroid(1, 20); // one new on right
 
   if (alienYear > 0) alienYear--;
 
   playCollisionSounds();
 
   // sparks
-  let cx = (a.x + b.x) / 2;
-  let cy = (a.y + b.y) / 2;
-  for (let i = 0; i < 30; i++) {
-    particles.push(new Particle(cx, cy));
-  }
+  for (let i = 0; i < 30; i++) particles.push(new Particle(width/2, height/2));
 
-  // reset them for next cycle
-  a.orbits = 0; b.orbits = 0;
-  a.movingToCenter = false; 
-  b.movingToCenter = false;
-  a.orbitRadius = a.baseOrbit; 
-  b.orbitRadius = b.baseOrbit;
-
-  setTimeout(() => { a.hasCollided = false; b.hasCollided = false; }, 300);
+  // reset
+  asteroids.forEach(ast => ast.orbits = 0);
+  cycleLength++; // next round takes longer
+  inGathering = false;
 }
 
-function spawnAsteroid(planetIndex, generation, parentSize = 20) {
-  let newSize = max(5, parentSize - 3);
-  asteroids.push(makeAsteroid(planetIndex, ORBIT_BASE_RADIUS, newSize, generation));
+function spawnAsteroid(planetIndex, size) {
+  asteroids.push(makeAsteroid(planetIndex, ORBIT_BASE_RADIUS, size));
 }
 
 /* ----------------- particles ----------------- */
@@ -257,7 +231,7 @@ function drawPlanet(x, y, r) {
     ellipse(x, y, i * 2);
   }
   fill(255, 255, 255, 40);
-  ellipse(x - r * 0.35, y - r * 0.35, r * 0.6);
+  ellipse(x - r*0.35, y - r*0.35, r*0.6);
 }
 
 /* ----------------- sound ----------------- */
