@@ -2,28 +2,32 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Hungry Chicken Game</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <title>Hungry Chicken</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Use matching versions for stability -->
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/addons/p5.sound.min.js"></script>
     <style>
       html, body {
         height: 100%;
         margin: 0;
-        background: #f9fafb;
+        background: #0f1220; /* page bg behind canvas */
         display: flex;
         justify-content: center;
         align-items: center;
       }
       canvas {
-        border-radius: 20px;
-        box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        border-radius: 16px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.35);
       }
     </style>
   </head>
   <body>
+    <!-- Classes first -->
     <script src="player.js"></script>
-    <script src="orb.js"></script>
-    <script src="particle.js"></script> <!-- new! -->
+    <script src="worm.js"></script>
+    <script src="particle.js"></script>
+    <!-- Main last -->
     <script src="sketch.js"></script>
   </body>
 </html>

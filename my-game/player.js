@@ -2,20 +2,26 @@ class Player {
   constructor(x, y, r) {
     this.x = x;
     this.y = y;
-    this.r = r;
+    this.r = r;       // base radius (design size)
+    this.scale = 1;   // visual growth multiplier
     this.speed = 5;
-    this.scale = 1;
-    this.beakOpen = 0; // how open the beak is
+    this.beakOpen = 0; // peck animation amplitude
+  }
+
+  effectiveRadius() {
+    // Use scaled radius for collisions/constraints
+    return this.r * this.scale;
   }
 
   move() {
-    if (keyIsDown(LEFT_ARROW)) this.x -= this.speed;
+    if (keyIsDown(LEFT_ARROW))  this.x -= this.speed;
     if (keyIsDown(RIGHT_ARROW)) this.x += this.speed;
-    if (keyIsDown(UP_ARROW)) this.y -= this.speed;
-    if (keyIsDown(DOWN_ARROW)) this.y += this.speed;
+    if (keyIsDown(UP_ARROW))    this.y -= this.speed;
+    if (keyIsDown(DOWN_ARROW))  this.y += this.speed;
 
-    this.x = constrain(this.x, this.r, width - this.r);
-    this.y = constrain(this.y, this.r, height - this.r);
+    const R = this.effectiveRadius();
+    this.x = constrain(this.x, R, width - R);
+    this.y = constrain(this.y, R, height - R);
   }
 
   display() {
@@ -24,47 +30,41 @@ class Player {
     scale(this.scale);
     noStroke();
 
-    // main head (white)
+    // Head
     fill(255);
     ellipse(0, 0, this.r * 2);
 
-    // red comb (top)
-    fill(220, 0, 0);
+    // Comb (red)
+    fill(230, 20, 35);
     ellipse(-this.r * 0.3, -this.r * 1.1, this.r * 0.6, this.r * 0.6);
-    ellipse(0, -this.r * 1.2, this.r * 0.6, this.r * 0.6);
-    ellipse(this.r * 0.3, -this.r * 1.1, this.r * 0.6, this.r * 0.6);
+    ellipse(0,            -this.r * 1.25, this.r * 0.6, this.r * 0.6);
+    ellipse( this.r * 0.3, -this.r * 1.1, this.r * 0.6, this.r * 0.6);
 
-    // eye (black circle)
+    // Eye
     fill(0);
-    ellipse(this.r * 0.3, -this.r * 0.2, this.r * 0.3);
-
-    // white highlight
+    ellipse(this.r * 0.3, -this.r * 0.2, this.r * 0.32);
     fill(255);
-    ellipse(this.r * 0.35, -this.r * 0.25, this.r * 0.1);
+    ellipse(this.r * 0.36, -this.r * 0.26, this.r * 0.1);
 
-    // beak (orange triangle)
+    // Beak (orange), animated open/close
     fill(255, 170, 0);
-    let open = this.beakOpen;
+    const open = this.beakOpen;
     triangle(
       this.r * 0.4, 0,
-      this.r * 1.1, -this.r * 0.2 - open,
-      this.r * 1.1, this.r * 0.2 + open
+      this.r * 1.15, -this.r * 0.2 - open,
+      this.r * 1.15,  this.r * 0.2 + open
     );
 
-    // gradually close the beak
+    // Ease beak closed each frame
     this.beakOpen = lerp(this.beakOpen, 0, 0.1);
 
     pop();
   }
 
-  hits(orb) {
-    let d = dist(this.x, this.y, orb.x, orb.y);
-    return d < this.r + orb.r;
-  }
-
   grow() {
+    // Visual growth and peck pop
     this.r += 2;
     this.scale += 0.05;
-    this.beakOpen = this.r * 0.3; // open beak when eating!
+    this.beakOpen = this.r * 0.3;
   }
 }
