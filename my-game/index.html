@@ -1,14 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-  <meta charset="UTF-8" />
-  <title>Player vs Orbs</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/addons/p5.sound.min.js"></script>
-</head>
-  <body style="margin:0; background:#111;">
+    <meta charset="UTF-8" />
+    <title>Hungry Chicken Game</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/addons/p5.sound.min.js"></script>
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        background: #f9fafb;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      canvas {
+        border-radius: 20px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.2);
+      }
+    </style>
+  </head>
+  <body>
     <script src="player.js"></script>
     <script src="orb.js"></script>
+    <script src="particle.js"></script> <!-- new! -->
     <script src="sketch.js"></script>
   </body>
 </html>
