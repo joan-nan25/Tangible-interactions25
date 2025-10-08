@@ -1,5 +1,5 @@
 let player;
-let orbs = [];
+let worms = [];
 let particles = [];
 let collectSound;
 let score = 0;
@@ -12,33 +12,34 @@ function preload() {
 function setup() {
   createCanvas(800, 600);
   player = new Player(width / 2, height / 2, 30);
-  createOrbs(15);
+  createWorms(10);
 }
 
 function draw() {
-  background(245, 255, 250);
+  background(240, 255, 250);
 
   if (!gameOver) {
-    // update orbs
-    for (let i = orbs.length - 1; i >= 0; i--) {
-      orbs[i].move();
-      orbs[i].display();
+    // --- Update & draw worms ---
+    for (let i = worms.length - 1; i >= 0; i--) {
+      worms[i].move();
+      worms[i].display();
 
-      if (player.hits(orbs[i])) {
+      // check collision
+      if (worms[i].hits(player.x, player.y, player.r)) {
         collectSound.play();
-        createParticles(orbs[i].x, orbs[i].y, orbs[i].color);
-        orbs.splice(i, 1);
+        createParticles(worms[i].x, worms[i].y, worms[i].color);
+        worms.splice(i, 1);
         player.grow();
         score++;
 
-        // GAME OVER trigger
+        // game over condition
         if (player.r > 180) {
           gameOver = true;
         }
       }
     }
 
-    // update particles
+    // --- Update & draw particles ---
     for (let i = particles.length - 1; i >= 0; i--) {
       particles[i].update();
       particles[i].display();
@@ -47,16 +48,18 @@ function draw() {
       }
     }
 
+    // --- Player movement & display ---
     player.move();
     player.display();
 
+    // --- UI ---
     drawUI();
+
   } else {
-    // darken background
+    // --- Game Over Screen ---
     fill(0, 150);
     rect(0, 0, width, height);
 
-    // GAME OVER text
     textAlign(CENTER, CENTER);
     fill(255);
     textSize(48);
@@ -79,13 +82,13 @@ function resetGame() {
   gameOver = false;
   particles = [];
   player = new Player(width / 2, height / 2, 30);
-  createOrbs(15);
+  createWorms(10);
 }
 
-function createOrbs(count) {
-  orbs = [];
+function createWorms(count) {
+  worms = [];
   for (let i = 0; i < count; i++) {
-    orbs.push(new Orb(random(width), random(height), random(20, 40)));
+    worms.push(new Worm(random(width), random(height), int(random(8, 14))));
   }
 }
 
@@ -96,14 +99,11 @@ function createParticles(x, y, col) {
 }
 
 function drawUI() {
-  // score
   fill(50);
   noStroke();
   textSize(24);
   textAlign(LEFT);
   text("🍗 Score: " + score, 20, 40);
-
-  // instructions
   textSize(14);
   text("← ↑ ↓ → move | Space = reset", 20, height - 20);
 }
