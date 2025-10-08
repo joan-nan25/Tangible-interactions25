@@ -25,7 +25,7 @@ function preload() {
   collisionSound = loadSound('assets/collision.wav');
   crackSound     = loadSound('assets/crack.wav');
   rattleSound    = loadSound('assets/rattle.wav');
-  bgImage        = loadImage('assets/space-bg.jpg'); // rename if needed
+  bgImage        = loadImage('assets/space-bg.jpg'); // 
 }
 
 function setup() {
