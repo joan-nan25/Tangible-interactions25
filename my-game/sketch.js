@@ -16,7 +16,8 @@ function setup() {
 }
 
 function draw() {
-  background(240, 255, 250);
+  // 🌑 Original dark theme background
+  background(20, 25, 40);
 
   if (!gameOver) {
     // --- Update & draw worms ---
@@ -57,7 +58,7 @@ function draw() {
 
   } else {
     // --- Game Over Screen ---
-    fill(0, 150);
+    fill(0, 180);
     rect(0, 0, width, height);
 
     textAlign(CENTER, CENTER);
@@ -99,11 +100,15 @@ function createParticles(x, y, col) {
 }
 
 function drawUI() {
-  fill(50);
+  // --- Scoreboard ---
+  fill(255);
   noStroke();
   textSize(24);
   textAlign(LEFT);
   text("🍗 Score: " + score, 20, 40);
+
+  // --- Instructions ---
   textSize(14);
+  fill(200);
   text("← ↑ ↓ → move | Space = reset", 20, height - 20);
 }
