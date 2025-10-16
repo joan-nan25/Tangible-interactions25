@@ -2,14 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>🪂 Skydiver Simulation</title>
+    <title>🪂 Skydiver Simulation with Wind</title>
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
   </head>
   <body>
     <main>
-      <h1>Wind & Gravity Simulation — Skydiver</h1>
-      <p>Choose a parachute material and start your descent!</p>
+      <h1>Egg Skydiver Simulator</h1>
+      <p>Choose a parachute material and adjust wind speed to see its effect!</p>
 
       <div class="controls">
         <label for="material">Material:</label>
@@ -19,6 +19,10 @@
           <option value="plastic">Plastic (low drag)</option>
           <option value="metal">Metal (heavy)</option>
         </select>
+
+        <label for="windSpeed">Wind Speed:</label>
+        <input type="range" id="windSpeed" min="-1" max="1" step="0.01" value="0" />
+
         <button id="start-btn">Start Simulation</button>
         <button id="reset-btn">Reset</button>
       </div>

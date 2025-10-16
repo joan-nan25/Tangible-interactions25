@@ -2,6 +2,8 @@ let skydiver;
 let gravity;
 let started = false;
 let materialType = "silk";
+let windSlider;
+let windVariation = 0; // for subtle natural oscillation
 
 // Material properties (drag = air resistance, weight = mass)
 let materials = {
@@ -17,28 +19,36 @@ function setup() {
 
   gravity = createVector(0, 0.2);
 
+  // Connect UI
   select("#start-btn").mousePressed(startSim);
   select("#reset-btn").mousePressed(resetSim);
   select("#material").changed(() => {
     materialType = select("#material").value();
   });
+  windSlider = select("#windSpeed");
 
   resetSim();
 }
 
 function draw() {
-  background(135, 206, 235); // Sky blue
+  background(135, 206, 235);
 
   // Ground
   noStroke();
   fill(90, 180, 90);
   rect(0, height - 50, width, 50);
 
+  // Get wind from slider + a subtle oscillation to simulate gusts
+  let baseWind = parseFloat(windSlider.value());
+  windVariation = sin(frameCount * 0.01) * 0.2;
+  let totalWind = baseWind + windVariation;
+  let wind = createVector(totalWind, 0);
+
   if (started) {
     // Apply gravity
     skydiver.applyForce(p5.Vector.mult(gravity, skydiver.weight));
 
-    // Air resistance (drag)
+    // Apply air drag
     let drag = skydiver.velocity.copy();
     drag.mult(-1);
     drag.normalize();
@@ -47,24 +57,29 @@ function draw() {
     drag.mult(c * speedSq);
     skydiver.applyForce(drag);
 
+    // Apply wind
+    skydiver.applyForce(wind);
+
     // Update motion
     skydiver.update();
     skydiver.checkGround();
   }
 
-  // Display the skydiver and data
+  // Draw diver and info
   skydiver.display();
+
   fill(0);
-  textSize(14);
+  textSize(16);
   textAlign(LEFT);
-  text(`Material: ${materialType}`, 20, 20);
-  text(`Velocity: ${skydiver.velocity.y.toFixed(2)}`, 20, 40);
+  text(`Material: ${materialType}`, 20, 30);
+  text(`Vertical Velocity: ${skydiver.velocity.y.toFixed(2)}`, 20, 55);
+  text(`Wind Speed: ${totalWind.toFixed(2)}`, 20, 80);
 }
 
-// Skydiver Class
+// Skydiver class
 class Skydiver {
   constructor() {
-    this.pos = createVector(width / 2, 50);
+    this.pos = createVector(width / 2, 100);
     this.velocity = createVector(0, 0);
     this.acceleration = createVector(0, 0);
     this.weight = 1;
@@ -92,17 +107,17 @@ class Skydiver {
   display() {
     // Parachute
     fill(255, 200, 200);
-    arc(this.pos.x, this.pos.y - 40, 80, 50, PI, TWO_PI);
+    arc(this.pos.x, this.pos.y - 40, 100, 60, PI, TWO_PI);
 
     // Strings
     stroke(180);
-    line(this.pos.x - 30, this.pos.y - 40, this.pos.x - 10, this.pos.y);
-    line(this.pos.x + 30, this.pos.y - 40, this.pos.x + 10, this.pos.y);
+    line(this.pos.x - 35, this.pos.y - 40, this.pos.x - 10, this.pos.y);
+    line(this.pos.x + 35, this.pos.y - 40, this.pos.x + 10, this.pos.y);
 
-    // Diver
+    // Diver body
     noStroke();
     fill(255, 100, 100);
-    ellipse(this.pos.x, this.pos.y, 20, 30);
+    ellipse(this.pos.x, this.pos.y, 22, 32);
   }
 }
 
