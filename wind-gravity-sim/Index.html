@@ -2,15 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Wind & Gravity Simulation</title>
+    <title>🪂 Skydiver Simulation</title>
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
   </head>
   <body>
     <main>
-      <p>Use the sliders to control the forces of nature!</p>
+      <h1>Wind & Gravity Simulation — Skydiver</h1>
+      <p>Choose a parachute material and start your descent!</p>
+
+      <div class="controls">
+        <label for="material">Material:</label>
+        <select id="material">
+          <option value="silk">Silk (high drag)</option>
+          <option value="nylon">Nylon (medium drag)</option>
+          <option value="plastic">Plastic (low drag)</option>
+          <option value="metal">Metal (heavy)</option>
+        </select>
+        <button id="start-btn">Start Simulation</button>
+        <button id="reset-btn">Reset</button>
+      </div>
+
       <div id="sketch-holder"></div>
     </main>
+
     <script src="sketch.js"></script>
   </body>
 </html>

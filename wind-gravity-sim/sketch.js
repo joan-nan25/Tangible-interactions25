@@ -1,71 +1,119 @@
-let particles = [];
-let gravitySlider, windSlider;
+let skydiver;
+let gravity;
+let started = false;
+let materialType = "silk";
+
+// Material properties (drag = air resistance, weight = mass)
+let materials = {
+  silk: { drag: 0.08, weight: 1 },
+  nylon: { drag: 0.05, weight: 1.2 },
+  plastic: { drag: 0.03, weight: 1.5 },
+  metal: { drag: 0.0, weight: 3 },
+};
 
 function setup() {
-  let canvas = createCanvas(800, 500);
+  let canvas = createCanvas(500, 600);
   canvas.parent("sketch-holder");
 
-  gravitySlider = createSlider(0, 1, 0.2, 0.01);
-  gravitySlider.position(20, 20);
-  windSlider = createSlider(-0.5, 0.5, 0, 0.01);
-  windSlider.position(20, 50);
+  gravity = createVector(0, 0.2);
 
-  for (let i = 0; i < 100; i++) {
-    particles.push(new Particle(random(width), random(height)));
-  }
+  select("#start-btn").mousePressed(startSim);
+  select("#reset-btn").mousePressed(resetSim);
+  select("#material").changed(() => {
+    materialType = select("#material").value();
+  });
+
+  resetSim();
 }
 
 function draw() {
-  background(220, 240, 255);
-  let gravityStrength = gravitySlider.value();
-  let windStrength = windSlider.value();
+  background(135, 206, 235); // Sky blue
 
-  fill(0);
+  // Ground
   noStroke();
-  textSize(14);
-  text(`Gravity: ${gravityStrength}`, 160, 35);
-  text(`Wind: ${windStrength}`, 160, 65);
+  fill(90, 180, 90);
+  rect(0, height - 50, width, 50);
 
-  let gravity = createVector(0, gravityStrength);
-  let wind = createVector(windStrength, 0);
+  if (started) {
+    // Apply gravity
+    skydiver.applyForce(p5.Vector.mult(gravity, skydiver.weight));
 
-  for (let p of particles) {
-    p.applyForce(gravity);
-    p.applyForce(wind);
-    p.update();
-    p.edges();
-    p.display();
+    // Air resistance (drag)
+    let drag = skydiver.velocity.copy();
+    drag.mult(-1);
+    drag.normalize();
+    let c = materials[materialType].drag;
+    let speedSq = skydiver.velocity.magSq();
+    drag.mult(c * speedSq);
+    skydiver.applyForce(drag);
+
+    // Update motion
+    skydiver.update();
+    skydiver.checkGround();
   }
+
+  // Display the skydiver and data
+  skydiver.display();
+  fill(0);
+  textSize(14);
+  textAlign(LEFT);
+  text(`Material: ${materialType}`, 20, 20);
+  text(`Velocity: ${skydiver.velocity.y.toFixed(2)}`, 20, 40);
 }
 
-class Particle {
-  constructor(x, y) {
-    this.pos = createVector(x, y);
-    this.vel = createVector(random(-1, 1), random(-1, 1));
-    this.acc = createVector(0, 0);
-    this.size = random(5, 10);
-    this.color = color(random(100, 255), random(100, 255), random(100, 255));
+// Skydiver Class
+class Skydiver {
+  constructor() {
+    this.pos = createVector(width / 2, 50);
+    this.velocity = createVector(0, 0);
+    this.acceleration = createVector(0, 0);
+    this.weight = 1;
   }
 
   applyForce(force) {
-    this.acc.add(force);
+    let f = p5.Vector.div(force, this.weight);
+    this.acceleration.add(f);
   }
 
   update() {
-    this.vel.add(this.acc);
-    this.pos.add(this.vel);
-    this.acc.mult(0);
+    this.velocity.add(this.acceleration);
+    this.pos.add(this.velocity);
+    this.acceleration.mult(0);
   }
 
-  edges() {
-    if (this.pos.y > height) this.pos.y = 0;
-    if (this.pos.x > width) this.pos.x = 0;
-    if (this.pos.x < 0) this.pos.x = width;
+  checkGround() {
+    if (this.pos.y > height - 70) {
+      this.pos.y = height - 70;
+      this.velocity.mult(0);
+      started = false;
+    }
   }
 
   display() {
+    // Parachute
+    fill(255, 200, 200);
+    arc(this.pos.x, this.pos.y - 40, 80, 50, PI, TWO_PI);
+
+    // Strings
+    stroke(180);
+    line(this.pos.x - 30, this.pos.y - 40, this.pos.x - 10, this.pos.y);
+    line(this.pos.x + 30, this.pos.y - 40, this.pos.x + 10, this.pos.y);
+
+    // Diver
     noStroke();
-    fill(this.color);
-    ellipse(this.pos.x, this.pos.y, this.size);
+    fill(255, 100, 100);
+    ellipse(this.pos.x, this.pos.y, 20, 30);
   }
+}
+
+function startSim() {
+  if (!started) {
+    started = true;
+    skydiver.weight = materials[materialType].weight;
+  }
+}
+
+function resetSim() {
+  skydiver = new Skydiver();
+  started = false;
 }

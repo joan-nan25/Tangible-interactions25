@@ -1,5 +1,5 @@
 body {
-  background: #dfefff;
+  background: linear-gradient(#aee1f9, #f0f8ff);
   font-family: "Inter", sans-serif;
   display: flex;
   flex-direction: column;
@@ -10,11 +10,34 @@ body {
 }
 
 main {
-  text-align: right;
+  text-align: center;
 }
 
 canvas {
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   margin-top: 10px;
+}
+
+.controls {
+  margin: 10px;
+}
+
+select,
+button {
+  margin: 0 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+}
+
+button {
+  background-color: #4ba3ff;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #2a83e8;
 }
