@@ -14,7 +14,7 @@ let materials = {
 };
 
 function setup() {
-  let canvas = createCanvas(800, 800);
+  let canvas = createCanvas(600, 600);
   canvas.parent("sketch-holder");
 
   gravity = createVector(0, 0.2);
