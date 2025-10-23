@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Arcade Invaders</title>
+    <style>
+      html, body { margin:0; padding:0; background:#0b0e16; color:#e6edf3; font-family:sans-serif; }
+      canvas { display:block; margin:auto; border:1px solid rgba(255,255,255,0.1); border-radius:12px; }
+      #ui {
+        position: fixed; top: 12px; left: 12px;
+        background: rgba(0,0,0,0.3); padding:10px 14px;
+        border-radius:10px; font-size:14px; backdrop-filter: blur(4px);
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.3/lib/p5.min.js"></script>
+    <script src="player.js"></script>
+    <script src="bullet.js"></script>
+    <script src="invader.js"></script>
+    <script src="explosion.js"></script>
+    <script src="bonus.js"></script>
+    <script src="sketch.js"></script>
+  </head>
+  <body>
+    <div id="ui">
+      Score: <span id="score">0</span> |
+      Lives: <span id="lives">3</span> |
+      Level: <span id="level">1</span>
+    </div>
+  </body>
+</html>
