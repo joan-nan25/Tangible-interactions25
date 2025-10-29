@@ -1,24 +1,40 @@
 class Storm {
-  constructor(x) {
+  constructor(x, thunderSound) {
     this.pos = createVector(x, 150);
     this.vel = createVector(random(-1, -0.5), 0);
     this.nutrientValue = random(-0.2, 0.3);
     this.lightning = false;
     this.lightningTimer = 0;
+    this.raindrops = [];
+    this.thunderSound = thunderSound;
   }
 
   update(tree) {
     this.pos.add(p5.Vector.mult(this.vel, windSpeed));
 
-    // Random chance for lightning
+    // Create rain particles
+    if (random(1) < 0.3) {
+      this.raindrops.push(createVector(this.pos.x + random(-40, 40), this.pos.y + 20));
+    }
+
+    // Update raindrops
+    for (let r of this.raindrops) {
+      r.y += 10;
+    }
+    this.raindrops = this.raindrops.filter(r => r.y < height * 0.75);
+
+    // Random lightning
     if (random(1) < 0.01 && this.lightningTimer <= 0) {
       this.lightning = true;
       this.lightningTimer = 10;
-      stormColorFactor = 1; // darken sky for flash
+      stormColorFactor = 1;
 
-      // If close to tree, strike it
       if (abs(this.pos.x - tree.pos.x) < 50) {
         tree.strike(this.nutrientValue);
+      }
+
+      if (this.thunderSound && !this.thunderSound.isPlaying()) {
+        this.thunderSound.play();
       }
     }
 
@@ -32,12 +48,12 @@ class Storm {
   }
 
   display() {
-    // cloud
+    // Cloud
     noStroke();
     fill(100);
     ellipse(this.pos.x, this.pos.y, 120, 60);
 
-    // lightning flash
+    // Lightning
     if (this.lightning) {
       stroke(255, 255, 200);
       strokeWeight(3);
@@ -45,6 +61,13 @@ class Storm {
         let lx = this.pos.x + random(-10, 10);
         line(lx, this.pos.y, lx + random(-20, 20), height * 0.75);
       }
+    }
+
+    // Rain
+    stroke(150, 150, 255, 150);
+    strokeWeight(2);
+    for (let r of this.raindrops) {
+      line(r.x, r.y, r.x, r.y + 10);
     }
   }
 }

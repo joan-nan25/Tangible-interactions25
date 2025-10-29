@@ -1,9 +1,19 @@
 let tree;
 let storms = [];
+let stormFreqSlider;
+let thunderSound;
+
+function preload() {
+  thunderSound = loadSound("assets/thunder.mp3");
+}
 
 function setup() {
   createCanvas(800, 600);
   tree = new Tree(width / 2, height * 0.75);
+
+  stormFreqSlider = createSlider(0, 0.02, 0.005, 0.001);
+  stormFreqSlider.position(20, 20);
+  stormFreqSlider.style('width', '150px');
 }
 
 function draw() {
@@ -17,15 +27,20 @@ function draw() {
     s.display();
   }
 
-  // occasional random storms
-  if (random(1) < 0.005) storms.push(new Storm(width + 100));
+  if (random(1) < stormFreqSlider.value()) {
+    storms.push(new Storm(width + 100, thunderSound));
+  }
 
-  // trim old storms
   storms = storms.filter(s => s.pos.x > -200);
+
+  // UI
+  fill(255);
+  textSize(14);
+  text("Storm Frequency", 20, 15);
 }
 
 function mousePressed() {
-  storms.push(new Storm(mouseX));
+  storms.push(new Storm(mouseX, thunderSound));
 }
 
 function keyPressed() {
