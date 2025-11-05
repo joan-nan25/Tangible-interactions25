@@ -1,7 +1,7 @@
 let windSpeed = 0.5;
 let stormColorFactor = 0;
 
-function drawEnvironment(treeHealth) {
+function drawEnvironment() {
   // Sky gradient that darkens during storms
   let skyTop = color(255 - 120 * stormColorFactor, 200 - 160 * stormColorFactor, 120);
   let skyBottom = color(240 - 100 * stormColorFactor, 180 - 90 * stormColorFactor, 80);
@@ -13,7 +13,7 @@ function drawEnvironment(treeHealth) {
     rect(0, 0, width, height);
   }
 
-  // Draw sand hill
+  // Sand hill
   noStroke();
   fill(210, 180, 120);
   beginShape();
@@ -25,7 +25,7 @@ function drawEnvironment(treeHealth) {
   vertex(0, height);
   endShape(CLOSE);
 
-  // Add grass patches
+  // Static grass (no movement)
   drawGrass();
 }
 
@@ -42,7 +42,7 @@ function drawGrass() {
   pop();
 }
 
-// Helper for vertical gradient
+// Gradient helper
 function setGradient(x, y, w, h, c1, c2) {
   noFill();
   for (let i = y; i <= y + h; i++) {

@@ -1,8 +1,8 @@
 class Storm {
-  constructor(x, thunderSound) {
+  constructor(x, thunderSound, scenarioType) {
     this.pos = createVector(x, 150);
     this.vel = createVector(random(-1, -0.5), 0);
-    this.nutrientValue = random([-1, 1]); // -1 = bad, 1 = good
+    this.scenarioType = scenarioType; // fixed for this run
     this.activated = false;
     this.thunderSound = thunderSound;
     this.flashAlpha = 0;
@@ -11,10 +11,10 @@ class Storm {
   update(trees) {
     this.pos.add(p5.Vector.mult(this.vel, windSpeed));
 
-    // Check if storm passes near trees
+    // When storm crosses trees, apply chosen scenario
     if (!this.activated && this.pos.x < width / 2) {
       this.activated = true;
-      let good = this.nutrientValue > 0;
+      let good = this.scenarioType === "good";
 
       for (let t of trees) {
         t.nourish(good);
@@ -38,12 +38,10 @@ class Storm {
   }
 
   display() {
-    // Cloud
     noStroke();
     fill(100);
     ellipse(this.pos.x, this.pos.y, 120, 60);
 
-    // Flash overlay
     if (this.flashAlpha > 5) {
       noStroke();
       fill(255, 255, 230, this.flashAlpha);

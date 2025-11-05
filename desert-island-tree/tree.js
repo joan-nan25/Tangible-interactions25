@@ -1,41 +1,59 @@
 class Tree {
   constructor(x, y, colorShift = 0) {
     this.pos = createVector(x, y);
-    this.health = 1; // 1 = healthy
+    this.health = 1;
     this.baseWidth = 14;
     this.width = this.baseWidth;
     this.height = 160;
     this.fallen = false;
     this.angle = 0;
-    this.regrowthPulse = 0;
     this.colorShift = colorShift;
     this.hasFruit = false;
+    this.fruits = []; // fallen fruit positions
   }
 
   nourish(good) {
-    // Good storm: grow lush and bear fruit
+    this.fruits = []; // clear old fruits
+
     if (good) {
+      // Good nutrients
       this.health = 1;
-      this.hasFruit = true;
-      this.regrowthPulse = 1;
       this.width = this.baseWidth + random(3, 6);
       this.fallen = false;
       this.angle = 0;
-    } 
-    // Bad storm: weaken and fall
-    else {
+      this.hasFruit = true;
+    } else {
+      // Bad nutrients
       this.health = 0.5;
       this.width = this.baseWidth - random(4, 6);
       this.fallen = true;
       this.hasFruit = false;
+
+      // Drop fruit to ground
+      for (let i = 0; i < 3; i++) {
+        this.fruits.push({
+          x: this.pos.x + random(-20, 20),
+          y: this.pos.y - this.height + 20,
+          speed: random(2, 4),
+          fallen: false
+        });
+      }
     }
   }
 
   update() {
-    // Animate regrowth pulse
-    this.regrowthPulse *= 0.9;
+    // Animate fallen fruit
+    for (let f of this.fruits) {
+      if (!f.fallen) {
+        f.y += f.speed;
+        if (f.y >= height * 0.75) {
+          f.y = height * 0.75;
+          f.fallen = true;
+        }
+      }
+    }
 
-    // Animate falling if weakened
+    // Animate fall if weakened
     if (this.fallen) {
       this.angle = lerp(this.angle, PI / 2, 0.02);
     } else {
@@ -48,7 +66,7 @@ class Tree {
     translate(this.pos.x, this.pos.y);
     rotate(-this.angle);
 
-    // Colors based on health
+    // Colors
     let trunkColor = lerpColor(color(90, 60, 40), color(160, 110, 60), this.health);
     let leafColor = lerpColor(
       color(80 + this.colorShift, 50, 50),
@@ -64,10 +82,9 @@ class Tree {
     // Leaves
     noStroke();
     fill(leafColor);
-    let leafGrow = map(this.regrowthPulse, 0, 1, 0, 10);
-    ellipse(0, -this.height, 90 + leafGrow, 70 + leafGrow);
+    ellipse(0, -this.height, 90, 70);
 
-    // Fruit (visible only if nourished)
+    // Fruits on healthy tree
     if (this.hasFruit) {
       fill(255, 50, 50);
       ellipse(-15, -this.height + 20, 12, 12);
@@ -76,5 +93,12 @@ class Tree {
     }
 
     pop();
+
+    // Fallen fruits on the ground
+    noStroke();
+    fill(255, 50, 50);
+    for (let f of this.fruits) {
+      ellipse(f.x, f.y, 10, 10);
+    }
   }
 }
