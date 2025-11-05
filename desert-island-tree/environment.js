@@ -2,18 +2,18 @@ let windSpeed = 0.5;
 let stormColorFactor = 0;
 
 function drawEnvironment() {
-  // Sky gradient that darkens during storms
+  // Sky gradient that darkens during tornado
   let skyTop = color(255 - 120 * stormColorFactor, 200 - 160 * stormColorFactor, 120);
   let skyBottom = color(240 - 100 * stormColorFactor, 180 - 90 * stormColorFactor, 80);
   setGradient(0, 0, width, height, skyTop, skyBottom);
 
-  // Glow flash effect for lightning
+  // Light flash overlay during event
   if (stormColorFactor > 0.5) {
     fill(255, 255, 230, 80);
     rect(0, 0, width, height);
   }
 
-  // Sand hill
+  // Draw the hill (still desert sand)
   noStroke();
   fill(210, 180, 120);
   beginShape();
@@ -25,24 +25,30 @@ function drawEnvironment() {
   vertex(0, height);
   endShape(CLOSE);
 
-  // Static grass (no movement)
-  drawGrass();
+  // Static grass — not regenerated each frame
+  drawStaticGrass();
 }
 
-function drawGrass() {
-  push();
-  for (let i = 0; i < 150; i++) {
-    let gx = random(width);
-    let gy = height * 0.73 + noise(gx * 0.01) * 20 + random(-5, 5);
-    let c = color(60, 150 + random(-20, 30), 60);
-    stroke(c);
-    strokeWeight(2);
-    line(gx, gy, gx + random(-2, 2), gy - random(10, 20));
+let staticGrass = [];
+
+function drawStaticGrass() {
+  if (staticGrass.length === 0) {
+    for (let i = 0; i < 180; i++) {
+      staticGrass.push({
+        x: random(width),
+        y: height * 0.73 + noise(i * 0.1) * 20 + random(-5, 5),
+        h: random(10, 25),
+        color: color(60, 150 + random(-20, 30), 60)
+      });
+    }
   }
-  pop();
+  for (let g of staticGrass) {
+    stroke(g.color);
+    strokeWeight(2);
+    line(g.x, g.y, g.x + random(-1, 1), g.y - g.h);
+  }
 }
 
-// Gradient helper
 function setGradient(x, y, w, h, c1, c2) {
   noFill();
   for (let i = y; i <= y + h; i++) {
