@@ -2,26 +2,22 @@ class Storm {
   constructor(x, thunderSound) {
     this.pos = createVector(x, 150);
     this.vel = createVector(random(-1, -0.5), 0);
-    this.nutrientValue = random(-0.2, 0.3); // bad or good nutrient
+    this.nutrientValue = random(-0.2, 0.3);
     this.lightning = false;
     this.lightningTimer = 0;
     this.raindrops = [];
     this.thunderSound = thunderSound;
-    this.flashAlpha = 0; // for screen flash
+    this.flashAlpha = 0;
   }
 
-  update(tree) {
+  update(trees) {
     this.pos.add(p5.Vector.mult(this.vel, windSpeed));
 
-    // Create rain particles
+    // Rain
     if (random(1) < 0.3) {
       this.raindrops.push(createVector(this.pos.x + random(-40, 40), this.pos.y + 20));
     }
-
-    // Update rain
-    for (let r of this.raindrops) {
-      r.y += 10;
-    }
+    for (let r of this.raindrops) r.y += 10;
     this.raindrops = this.raindrops.filter(r => r.y < height * 0.75);
 
     // Random lightning
@@ -30,18 +26,22 @@ class Storm {
       this.lightningTimer = 10;
       stormColorFactor = 1;
 
-      // Tree hit check
-      if (abs(this.pos.x - tree.pos.x) < 50) {
-        tree.strike(this.nutrientValue);
+      // Check each tree
+      for (let t of trees) {
+        if (abs(this.pos.x - t.pos.x) < 60) {
+          t.strike(this.nutrientValue);
+        }
       }
 
-      // Play thunder
-      if (this.thunderSound && !this.thunderSound.isPlaying()) {
-        this.thunderSound.setVolume(0.7);
-        this.thunderSound.play();
+      // Play thunder (only after interaction)
+      if (this.thunderSound && userStartAudio && getAudioContext().state === "running") {
+        if (!this.thunderSound.isPlaying()) {
+          this.thunderSound.rate(random(0.9, 1.2));
+          this.thunderSound.setVolume(0.6);
+          this.thunderSound.play();
+        }
       }
 
-      // Start flash
       this.flashAlpha = 180;
     }
 
@@ -53,7 +53,7 @@ class Storm {
       }
     }
 
-    // Fade screen flash
+    // Fade flash
     this.flashAlpha *= 0.9;
   }
 
@@ -63,7 +63,7 @@ class Storm {
     fill(100);
     ellipse(this.pos.x, this.pos.y, 120, 60);
 
-    // Lightning bolts
+    // Lightning
     if (this.lightning) {
       stroke(255, 255, 200);
       strokeWeight(3);
@@ -80,7 +80,7 @@ class Storm {
       line(r.x, r.y, r.x, r.y + 10);
     }
 
-    // Lightning screen flash
+    // Lightning flash
     if (this.flashAlpha > 5) {
       noStroke();
       fill(255, 255, 230, this.flashAlpha);
