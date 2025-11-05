@@ -1,19 +1,20 @@
 let windSpeed = 0.5;
 let stormColorFactor = 0;
+let staticGrass = [];
 
 function drawEnvironment() {
-  // Sky gradient that darkens during tornado
+  // --- Sky ---
   let skyTop = color(255 - 120 * stormColorFactor, 200 - 160 * stormColorFactor, 120);
   let skyBottom = color(240 - 100 * stormColorFactor, 180 - 90 * stormColorFactor, 80);
   setGradient(0, 0, width, height, skyTop, skyBottom);
 
-  // Light flash overlay during event
+  // Flash overlay during lightning
   if (stormColorFactor > 0.5) {
     fill(255, 255, 230, 80);
     rect(0, 0, width, height);
   }
 
-  // Draw the hill (still desert sand)
+  // --- Sand hill ---
   noStroke();
   fill(210, 180, 120);
   beginShape();
@@ -25,11 +26,35 @@ function drawEnvironment() {
   vertex(0, height);
   endShape(CLOSE);
 
-  // Static grass — not regenerated each frame
+  // --- Water (below the sand line) ---
+  drawWater();
+
+  // --- Static grass ---
   drawStaticGrass();
 }
 
-let staticGrass = [];
+function drawWater() {
+  push();
+  noStroke();
+
+  // Base water color
+  let waterTop = color(50, 120, 200);
+  let waterBottom = color(20, 80, 150);
+
+  // small gradient to make it feel like depth
+  for (let y = height * 0.82; y < height; y++) {
+    let inter = map(y, height * 0.82, height, 0, 1);
+    let c = lerpColor(waterTop, waterBottom, inter);
+    stroke(c);
+    line(0, y, width, y);
+  }
+
+  // Add a subtle highlight near the shore
+  fill(255, 255, 255, 40);
+  rect(0, height * 0.79, width, 5);
+
+  pop();
+}
 
 function drawStaticGrass() {
   if (staticGrass.length === 0) {
@@ -42,6 +67,7 @@ function drawStaticGrass() {
       });
     }
   }
+
   for (let g of staticGrass) {
     stroke(g.color);
     strokeWeight(2);
