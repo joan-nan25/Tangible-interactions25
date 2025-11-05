@@ -2,11 +2,12 @@ class Storm {
   constructor(x, thunderSound) {
     this.pos = createVector(x, 150);
     this.vel = createVector(random(-1, -0.5), 0);
-    this.nutrientValue = random(-0.2, 0.3);
+    this.nutrientValue = random(-0.2, 0.3); // bad or good nutrient
     this.lightning = false;
     this.lightningTimer = 0;
     this.raindrops = [];
     this.thunderSound = thunderSound;
+    this.flashAlpha = 0; // for screen flash
   }
 
   update(tree) {
@@ -17,7 +18,7 @@ class Storm {
       this.raindrops.push(createVector(this.pos.x + random(-40, 40), this.pos.y + 20));
     }
 
-    // Update raindrops
+    // Update rain
     for (let r of this.raindrops) {
       r.y += 10;
     }
@@ -29,13 +30,19 @@ class Storm {
       this.lightningTimer = 10;
       stormColorFactor = 1;
 
+      // Tree hit check
       if (abs(this.pos.x - tree.pos.x) < 50) {
         tree.strike(this.nutrientValue);
       }
 
+      // Play thunder
       if (this.thunderSound && !this.thunderSound.isPlaying()) {
+        this.thunderSound.setVolume(0.7);
         this.thunderSound.play();
       }
+
+      // Start flash
+      this.flashAlpha = 180;
     }
 
     if (this.lightningTimer > 0) {
@@ -45,6 +52,9 @@ class Storm {
         stormColorFactor = 0;
       }
     }
+
+    // Fade screen flash
+    this.flashAlpha *= 0.9;
   }
 
   display() {
@@ -53,7 +63,7 @@ class Storm {
     fill(100);
     ellipse(this.pos.x, this.pos.y, 120, 60);
 
-    // Lightning
+    // Lightning bolts
     if (this.lightning) {
       stroke(255, 255, 200);
       strokeWeight(3);
@@ -68,6 +78,13 @@ class Storm {
     strokeWeight(2);
     for (let r of this.raindrops) {
       line(r.x, r.y, r.x, r.y + 10);
+    }
+
+    // Lightning screen flash
+    if (this.flashAlpha > 5) {
+      noStroke();
+      fill(255, 255, 230, this.flashAlpha);
+      rect(0, 0, width, height);
     }
   }
 }

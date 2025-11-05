@@ -2,11 +2,12 @@ let windSpeed = 0.5;
 let stormColorFactor = 0;
 
 function drawEnvironment(treeHealth) {
+  // Sky gradient that darkens during storms
   let skyTop = color(255 - 120 * stormColorFactor, 200 - 160 * stormColorFactor, 120);
   let skyBottom = color(240 - 100 * stormColorFactor, 180 - 90 * stormColorFactor, 80);
   setGradient(0, 0, width, height, skyTop, skyBottom);
 
-  // Desert hill
+  // Draw the hill
   noStroke();
   fill(200, 180, 120);
   beginShape();
@@ -19,6 +20,7 @@ function drawEnvironment(treeHealth) {
   endShape(CLOSE);
 }
 
+// Helper for vertical gradient
 function setGradient(x, y, w, h, c1, c2) {
   noFill();
   for (let i = y; i <= y + h; i++) {
