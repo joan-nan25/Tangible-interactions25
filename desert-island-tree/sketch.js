@@ -57,9 +57,30 @@ function draw() {
 
 
 function mousePressed() {
+  // unlock the audio context
+  if (getAudioContext().state !== "running") {
+    getAudioContext().resume();
+  }
+
+  // allow tornado to play sound later
   userStartAudio();
 }
 
+
 function keyPressed() {
-  if (key === 'R') location.reload();
+  if (key === 'R' || key === 'r') {
+    // Reset the scene manually instead of reloading the whole page
+    scenarioType = random(["good", "bad"]);
+
+    trees = [
+      new Tree(width / 2 - 120, height * 0.75, 0),
+      new Tree(width / 2 + 120, height * 0.75, 40)
+    ];
+
+    tornadoes = [];
+    tornadoes.push(new Tornado(width + 100, thunderSound, scenarioType));
+
+    // reset visuals
+    stormColorFactor = 0;
+  }
 }
