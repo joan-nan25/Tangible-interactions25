@@ -8,28 +8,29 @@ function drawEnvironment() {
   let skyBottom = color(240 - 100 * stormColorFactor, 180 - 90 * stormColorFactor, 80);
   setGradient(0, 0, width, height, skyTop, skyBottom);
 
-  // Flash overlay during lightning
+  // Flash overlay
   if (stormColorFactor > 0.5) {
     fill(255, 255, 230, 80);
     rect(0, 0, width, height);
   }
 
-  // --- Sand hill ---
+  // --- Raised sand hill (higher island) ---
   noStroke();
   fill(210, 180, 120);
   beginShape();
   for (let x = 0; x <= width; x += 10) {
-    let y = height * 0.75 + noise(x * 0.01) * 40;
+    // Raise the hill by using 0.68 instead of 0.75 and a bit more height variation
+    let y = height * 0.68 + noise(x * 0.01) * 55;
     vertex(x, y);
   }
   vertex(width, height);
   vertex(0, height);
   endShape(CLOSE);
 
-  // --- Water (below the sand line) ---
+  // --- Ocean water below ---
   drawWater();
 
-  // --- Static grass ---
+  // --- Static grass on top of island ---
   drawStaticGrass();
 }
 
@@ -37,19 +38,19 @@ function drawWater() {
   push();
   noStroke();
 
-  // Base water color
   let waterTop = color(50, 120, 200);
   let waterBottom = color(20, 80, 150);
 
-  // small gradient to make it feel like depth
-  for (let y = height * 0.82; y < height; y++) {
-    let inter = map(y, height * 0.82, height, 0, 1);
+  // Slightly lower water band so it's clearly below the raised sand
+  const waterStart = height * 0.82;
+  for (let y = waterStart; y < height; y++) {
+    let inter = map(y, waterStart, height, 0, 1);
     let c = lerpColor(waterTop, waterBottom, inter);
     stroke(c);
     line(0, y, width, y);
   }
 
-  // Add a subtle highlight near the shore
+  // Shoreline highlight
   fill(255, 255, 255, 40);
   rect(0, height * 0.79, width, 5);
 
@@ -58,10 +59,11 @@ function drawWater() {
 
 function drawStaticGrass() {
   if (staticGrass.length === 0) {
-    for (let i = 0; i < 180; i++) {
+    for (let i = 0; i < 220; i++) {
       staticGrass.push({
         x: random(width),
-        y: height * 0.73 + noise(i * 0.1) * 20 + random(-5, 5),
+        // Place grass slightly above hill baseline so it sits on top of island
+        y: height * 0.66 + noise(i * 0.1) * 20 + random(-5, 5),
         h: random(10, 25),
         color: color(60, 150 + random(-20, 30), 60)
       });
@@ -71,7 +73,7 @@ function drawStaticGrass() {
   for (let g of staticGrass) {
     stroke(g.color);
     strokeWeight(2);
-    line(g.x, g.y, g.x + random(-1, 1), g.y - g.h);
+    line(g.x, g.y, g.x, g.y - g.h);
   }
 }
 

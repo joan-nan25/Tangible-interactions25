@@ -5,8 +5,9 @@ let scenarioType;
 let speedSlider;
 
 function preload() {
+  // Support mp3 or wav
   soundFormats('mp3', 'wav');
-  thunderSound = loadSound("assets/thunder.mp3");
+  thunderSound = loadSound('assets/thunder.mp3');
 }
 
 function setup() {
@@ -18,73 +19,100 @@ function setup() {
   // Random scenario each session
   scenarioType = random(["good", "bad"]);
 
-  // Center canvas in page
-  let canvas = document.querySelector("canvas");
-  if (canvas) {
-    canvas.style.display = "block";
-    canvas.style.margin = "auto";
+  // Center the canvas in the webpage
+  const c = document.querySelector("canvas");
+  if (c) {
+    c.style.display = "block";
+    c.style.margin = "40px auto";
   }
 
-  // Two trees
-  trees.push(new Tree(width / 2 - 120, height * 0.75, 0));
-  trees.push(new Tree(width / 2 + 120, height * 0.75, 40));
+  // Four trees across the island
+  const groundY = height * 0.75; // trunk base point (still works with raised hill)
+  trees = [
+    new Tree(width / 2 - 210, groundY, 0),
+    new Tree(width / 2 - 70,  groundY, 20),
+    new Tree(width / 2 + 70,  groundY, 40),
+    new Tree(width / 2 + 210, groundY, 60),
+  ];
 
-  // Tornado speed slider
+  // Tornado speed slider (positioned relative to window so it stays visible)
   speedSlider = createSlider(0.5, 5, 2, 0.1); // min, max, default, step
-  speedSlider.position(20, 20);
-  speedSlider.style('width', '150px');
+  positionSlider();
 
-  // Spawn initial tornado
-  tornadoes.push(new Tornado(width + 100, thunderSound, scenarioType));
+  // Initial tornado
+  tornadoes = [ new Tornado(width + 100, thunderSound, scenarioType) ];
 }
 
 function draw() {
   drawEnvironment();
 
-  // Update trees
+  // Trees
   for (let t of trees) {
     t.update();
     t.display();
   }
 
-  // Update tornadoes with slider speed
-  let tornadoSpeed = speedSlider.value();
+  // Tornadoes with slider-controlled speed
+  const tornadoSpeed = speedSlider.value();
   for (let tn of tornadoes) {
     tn.update(trees, tornadoSpeed);
-    tn.display();
+    tn.display(tornadoSpeed);
   }
 
-  // Remove old ones
-  tornadoes = tornadoes.filter(tn => tn.pos.x > -200);
+  // Remove tornado once fully faded
+  tornadoes = tornadoes.filter(tn => tn.alpha > 0);
 
   // UI text
   fill(255);
   noStroke();
   textSize(16);
-  text(`Scenario: ${scenarioType === "good" ? "🌱 Growth" : "💀 Destruction"}`, width / 2, 40);
+  text(
+    `Scenario: ${scenarioType === "good" ? "🌱 Growth" : "💀 Destruction"}`,
+    width / 2,
+    40
+  );
   textSize(13);
-  text("Press R to reset  |  Adjust Tornado Speed below", width / 2, 60);
-  textSize(12);
-  text("Tornado Speed", 95, 55);
+  text("Press R to reset  |  Adjust Tornado Speed", width / 2, 60);
 }
 
 function mousePressed() {
-  if (getAudioContext().state !== "running") {
-    getAudioContext().resume();
-  }
+  // Unlock audio context
+  if (getAudioContext().state !== "running") getAudioContext().resume();
+  userStartAudio();
+}
+
+function touchStarted() {
+  if (getAudioContext().state !== "running") getAudioContext().resume();
   userStartAudio();
 }
 
 function keyPressed() {
   if (key === 'R' || key === 'r') {
-    // Reset environment and scenario
+    // New random scenario on reset
     scenarioType = random(["good", "bad"]);
+    const groundY = height * 0.75;
+
     trees = [
-      new Tree(width / 2 - 120, height * 0.75, 0),
-      new Tree(width / 2 + 120, height * 0.75, 40)
+      new Tree(width / 2 - 210, groundY, 0),
+      new Tree(width / 2 - 70,  groundY, 20),
+      new Tree(width / 2 + 70,  groundY, 40),
+      new Tree(width / 2 + 210, groundY, 60),
     ];
-    tornadoes = [];
-    tornadoes.push(new Tornado(width + 100, thunderSound, scenarioType));
+
+    tornadoes = [ new Tornado(width + 100, thunderSound, scenarioType) ];
     stormColorFactor = 0;
   }
+}
+
+function positionSlider() {
+  const sliderWidth = 150;
+  const x = (windowWidth - sliderWidth) / 2; // center in window (canvas is centered too)
+  const y = 80; // just below the text
+  speedSlider.position(x, y);
+  speedSlider.style('width', sliderWidth + 'px');
+}
+
+function windowResized() {
+  // Keep slider in frame when window size changes
+  positionSlider();
 }
